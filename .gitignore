@@ -1,0 +1,33 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Tauri / runtime build artifacts
+crates/runtime/target/
+crates/runtime/gen/
+crates/runtime/png/
+crates/runtime/pake.json
+crates/runtime/.webpake/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Output
+dist/
+output/
+*.dmg
+*.msi
+*.deb
+*.AppImage
+*.rpm
+
+# Env
+.env
+.env.local
