@@ -39,5 +39,7 @@
   "inject": [],
   "proxy_url": "",
   "multi_instance": false,
-  "multi_window": false
+  "multi_window": false,
+  "block_ads": false,
+  "adblock_rules": ""
 }

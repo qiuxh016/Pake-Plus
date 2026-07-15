@@ -1,4 +1,5 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub mod adblock;
 mod app;
 mod util;
 
@@ -21,6 +22,7 @@ const GDK_BACKEND: &str = "GDK_BACKEND";
 
 use app::{
     invoke::{
+        adblock_add_rule, adblock_get_stats, adblock_remove_rule, adblock_report_blocked,
         clear_dock_badge, download_file, increment_dock_badge, send_notification, set_dock_badge,
         set_dock_badge_label, set_zoom, update_theme_mode,
     },
@@ -148,6 +150,8 @@ pub fn run_app() {
     let start_to_tray = pake_config.windows[0].start_to_tray && show_system_tray; // Only valid when tray is enabled
     let multi_instance = pake_config.multi_instance;
     let multi_window = pake_config.multi_window;
+    let block_ads = pake_config.block_ads;
+    let adblock_rules = pake_config.adblock_rules.clone();
     let _enable_find = pake_config.windows[0].enable_find;
 
     let window_state_plugin = WindowStatePlugin::default()
@@ -195,8 +199,15 @@ pub fn run_app() {
             clear_dock_badge,
             update_theme_mode,
             set_zoom,
+            adblock_report_blocked,
+            adblock_get_stats,
+            adblock_add_rule,
+            adblock_remove_rule,
         ])
         .setup(move |app| {
+            if block_ads {
+                app.manage(adblock::AdblockState::new(true, &adblock_rules));
+            }
             app.manage(MultiWindowState::new(
                 pake_config.clone(),
                 tauri_config.clone(),

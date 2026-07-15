@@ -147,6 +147,12 @@ export interface PakeCliOptions {
 
   // Request microphone entitlement on macOS, default false
   microphone: boolean;
+
+  // Enable built-in ad/tracker blocking (EasyList engine), default false
+  blockAds: boolean;
+
+  // Custom adblock rules file path (merged with built-in EasyList subset)
+  adblockRules: string;
 }
 
 export interface PakeAppOptions extends PakeCliOptions {
@@ -198,6 +204,8 @@ export interface PakeConfig {
   multi_instance: boolean;
   multi_window: boolean;
   inject?: string[];
+  block_ads?: boolean;
+  adblock_rules?: string;
 }
 
 export interface PakeTauriConfig {

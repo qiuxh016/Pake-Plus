@@ -1,4 +1,5 @@
 use crate::app::config::PakeConfig;
+use crate::adblock;
 use crate::util::{
     check_file_or_append, get_data_dir, get_download_message_with_lang, sanitize_download_filename,
     show_toast, MessageType,
@@ -306,8 +307,43 @@ fn build_window(
         .initialization_script(include_str!("../inject/event.js"))
         .initialization_script(include_str!("../inject/style.js"))
         .initialization_script(include_str!("../inject/theme_refresh.js"))
-        .initialization_script(include_str!("../inject/auth.js"))
-        .initialization_script(include_str!("../inject/custom.js"));
+        .initialization_script(include_str!("../inject/auth.js"));
+
+    if config.block_ads {
+        if let Some(state) = app.try_state::<adblock::AdblockState>() {
+            let export = state.engine.export_for_injection(None);
+            let adblock_script = format!(
+                "window.pakeAdblock = {};",
+                serde_json::json!({
+                    "enabled": true,
+                    "domains": export.domains,
+                    "regexes": export.regexes,
+                    "cosmetic_selectors": export.cosmetic_selectors,
+                })
+            );
+            window_builder = window_builder
+                .initialization_script(&adblock_script)
+                .initialization_script(include_str!("../inject/adblock.js"));
+
+            let engine = state.engine.clone();
+            let app_handle = app.clone();
+            window_builder = window_builder.on_navigation(move |url| {
+                let url_str = url.as_str();
+                if engine.check_and_block(url_str) {
+                    let count = engine.blocked_count();
+                    adblock::update_tray_block_count(&app_handle, count);
+                    return false;
+                }
+                engine.reset_page_count();
+                adblock::update_tray_block_count(&app_handle, 0);
+                true
+            });
+        }
+    } else {
+        window_builder = window_builder.on_navigation(|_| true);
+    }
+
+    window_builder = window_builder.initialization_script(include_str!("../inject/custom.js"));
 
     #[cfg(target_os = "windows")]
     let mut windows_browser_args = String::from("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-blink-features=AutomationControlled");
@@ -498,8 +534,6 @@ fn build_window(
             _ => true,
         });
     }
-
-    window_builder = window_builder.on_navigation(|_| true);
 
     window_builder.build()
 }

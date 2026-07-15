@@ -206,3 +206,55 @@ pub fn set_zoom(window: WebviewWindow, percent: f64) -> Result<(), String> {
         .set_zoom(factor)
         .map_err(|e| format!("Failed to set zoom: {}", e))
 }
+
+#[derive(serde::Serialize)]
+pub struct AdblockStats {
+    pub blocked_count: u32,
+    pub rule_count: usize,
+    pub enabled: bool,
+    pub custom_rules: Vec<String>,
+}
+
+#[command]
+pub fn adblock_report_blocked(app: AppHandle, count: u32) -> Result<(), String> {
+    if let Some(state) = app.try_state::<crate::adblock::AdblockState>() {
+        if state.enabled {
+            state.engine.set_page_count(count);
+            crate::adblock::update_tray_block_count(&app, count);
+        }
+    }
+    Ok(())
+}
+
+#[command]
+pub fn adblock_get_stats(app: AppHandle) -> Result<AdblockStats, String> {
+    let state = app
+        .try_state::<crate::adblock::AdblockState>()
+        .ok_or("Adblock is not enabled")?;
+    Ok(AdblockStats {
+        blocked_count: state.engine.blocked_count(),
+        rule_count: state.engine.rule_count(),
+        enabled: state.enabled,
+        custom_rules: state.engine.custom_rules(),
+    })
+}
+
+#[command]
+pub fn adblock_add_rule(app: AppHandle, rule: String) -> Result<AdblockStats, String> {
+    let state = app
+        .try_state::<crate::adblock::AdblockState>()
+        .ok_or("Adblock is not enabled")?;
+    state.engine.add_custom_rule(&rule)?;
+    adblock_get_stats(app)
+}
+
+#[command]
+pub fn adblock_remove_rule(app: AppHandle, rule: String) -> Result<AdblockStats, String> {
+    let state = app
+        .try_state::<crate::adblock::AdblockState>()
+        .ok_or("Adblock is not enabled")?;
+    if !state.engine.remove_custom_rule(&rule) {
+        return Err("Rule not found".to_string());
+    }
+    adblock_get_stats(app)
+}

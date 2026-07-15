@@ -291,6 +291,18 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         .default(DEFAULT.microphone)
         .hideHelp(),
     )
+    .addOption(
+      new Option(
+        '--block-ads',
+        'Enable built-in ad/tracker blocking (EasyList engine)',
+      ).default(DEFAULT.blockAds),
+    )
+    .addOption(
+      new Option(
+        '--adblock-rules <path>',
+        'Custom adblock rules file (merged with built-in EasyList rules)',
+      ).default(DEFAULT.adblockRules),
+    )
     .version(packageJson.version, '-v, --version')
     .configureHelp({
       sortSubcommands: true,
