@@ -87,6 +87,14 @@ pub struct PakeConfig {
     pub multi_instance: bool,
     #[serde(default)]
     pub multi_window: bool,
+    #[serde(default)]
+    pub clipboard: bool,
+    #[serde(default = "default_clipboard_max")]
+    pub clipboard_max: u32,
+}
+
+fn default_clipboard_max() -> u32 {
+    2000
 }
 
 impl PakeConfig {

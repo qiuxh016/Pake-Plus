@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clipboard History</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        color: #18212f;
+        background: #fff;
+        border: 1px solid #dfe4ec;
+        border-radius: 12px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: #f7f9fc;
+        border-bottom: 1px solid #e5e9f0;
+      }
+      .search {
+        flex: 1;
+        width: 100%;
+        height: 34px;
+        padding: 0 10px;
+        color: inherit;
+        background: #fff;
+        border: 1px solid #ccd3dd;
+        border-radius: 8px;
+        outline: none;
+      }
+      .search:focus {
+        border-color: #3478f6;
+        box-shadow: 0 0 0 2px rgba(52, 120, 246, 0.14);
+      }
+      .list {
+        flex: 1;
+        overflow: auto;
+        padding: 8px;
+      }
+      .item {
+        position: relative;
+        margin-bottom: 6px;
+        padding: 10px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: 9px;
+      }
+      .item:hover,
+      .item:focus-within {
+        background: #f2f5f9;
+        border-color: #dfe4ec;
+      }
+      .preview {
+        display: -webkit-box;
+        padding-right: 48px;
+        overflow: hidden;
+        font-size: 13px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+      .item.expanded .preview {
+        display: block;
+        max-height: 210px;
+        overflow: auto;
+      }
+      .meta {
+        margin-top: 6px;
+        color: #738096;
+        font-size: 11px;
+      }
+      .actions {
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 120ms ease;
+      }
+      .item:hover .actions,
+      .item:focus-within .actions {
+        opacity: 1;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+      .icon-button {
+        min-width: 26px;
+        height: 26px;
+        padding: 0 6px;
+        color: #3c485a;
+        background: #e8edf4;
+        border: 0;
+        border-radius: 6px;
+        font-size: 11px;
+      }
+      .icon-button:hover {
+        background: #d9e0ea;
+      }
+      .delete {
+        color: #b42318;
+        background: #fee9e7;
+      }
+      .empty,
+      .error {
+        padding: 38px 12px;
+        color: #738096;
+        font-size: 13px;
+        text-align: center;
+      }
+      .error {
+        color: #b42318;
+      }
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 12px;
+        background: #f7f9fc;
+        border-top: 1px solid #e5e9f0;
+        font-size: 12px;
+      }
+      .clear {
+        padding: 5px 9px;
+        color: #fff;
+        background: #d92d20;
+        border: 0;
+        border-radius: 6px;
+      }
+      .clear:disabled {
+        cursor: default;
+        opacity: 0.45;
+      }
+      .settings-button {
+        width: 34px;
+        height: 34px;
+        color: inherit;
+        background: #e8edf4;
+        border: 0;
+        border-radius: 8px;
+      }
+      .close-panel {
+        width: 34px;
+        height: 34px;
+        color: #667085;
+        background: #e8edf4;
+        border: 0;
+        border-radius: 8px;
+        font-size: 20px;
+        line-height: 1;
+      }
+      .settings-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: flex-end;
+        background: rgba(15, 23, 42, 0.36);
+      }
+      .settings-overlay[hidden] {
+        display: none;
+      }
+      .settings-card {
+        width: 100%;
+        padding: 16px;
+        background: #fff;
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.18);
+      }
+      .settings-title {
+        margin: 0 0 12px;
+        font-size: 15px;
+      }
+      .setting-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        margin: 9px 0;
+        font-size: 12px;
+      }
+      .ignored-apps-label {
+        display: block;
+        margin-top: 12px;
+        font-size: 12px;
+      }
+      .ignored-apps {
+        width: 100%;
+        min-height: 72px;
+        margin-top: 6px;
+        padding: 8px;
+        color: inherit;
+        background: #fff;
+        border: 1px solid #ccd3dd;
+        border-radius: 8px;
+        resize: vertical;
+      }
+      .settings-help {
+        margin: 5px 0 0;
+        color: #738096;
+        font-size: 11px;
+      }
+      .settings-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .settings-actions button {
+        padding: 6px 12px;
+        border: 0;
+        border-radius: 7px;
+      }
+      .save-settings {
+        color: #fff;
+        background: #3478f6;
+      }
+      .confirm-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.48);
+      }
+      .confirm-overlay[hidden] {
+        display: none;
+      }
+      .confirm-card {
+        width: 100%;
+        max-width: 276px;
+        padding: 18px;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 16px 42px rgba(15, 23, 42, 0.28);
+      }
+      .confirm-title {
+        margin: 0;
+        font-size: 16px;
+      }
+      .confirm-message {
+        margin: 8px 0 16px;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+      .confirm-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .confirm-actions button {
+        min-height: 36px;
+        border: 0;
+        border-radius: 8px;
+      }
+      .confirm-cancel {
+        color: #344054;
+        background: #eef1f5;
+      }
+      .confirm-clear {
+        color: #fff;
+        background: #d92d20;
+      }
+      .copy-toast {
+        position: fixed;
+        z-index: 30;
+        max-width: 210px;
+        padding: 8px 11px;
+        color: #fff;
+        pointer-events: none;
+        background: rgba(24, 33, 47, 0.94);
+        border-radius: 8px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.28);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .copy-toast[hidden] {
+        display: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          color: #edf1f7;
+          background: #16191f;
+          border-color: #343a46;
+        }
+        .header,
+        .footer {
+          background: #1d2129;
+          border-color: #343a46;
+        }
+        .search {
+          background: #252a34;
+          border-color: #424a59;
+        }
+        .item:hover,
+        .item:focus-within {
+          background: #232832;
+          border-color: #39414f;
+        }
+        .icon-button {
+          color: #e9edf4;
+          background: #353d4a;
+        }
+        .settings-button,
+        .close-panel,
+        .ignored-apps {
+          background: #252a34;
+          border-color: #424a59;
+        }
+        .settings-card {
+          background: #1d2129;
+        }
+        .confirm-card {
+          background: #1d2129;
+        }
+        .confirm-cancel {
+          color: #e5eaf2;
+          background: #343b47;
+        }
+        .delete {
+          color: #ffb4ab;
+          background: #532823;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <input id="search" class="search" type="search" autocomplete="off" />
+      <button id="settings-button" class="settings-button" type="button">
+        ⚙
+      </button>
+      <button id="close-panel" class="close-panel" type="button">×</button>
+    </header>
+    <main id="list" class="list"></main>
+    <section id="settings-overlay" class="settings-overlay" hidden>
+      <div class="settings-card" role="dialog" aria-modal="true">
+        <h2 id="settings-title" class="settings-title"></h2>
+        <label class="setting-row">
+          <input id="ignore-short" type="checkbox" />
+          <span id="ignore-short-label"></span>
+        </label>
+        <label class="setting-row">
+          <input id="ignore-password" type="checkbox" />
+          <span id="ignore-password-label"></span>
+        </label>
+        <label class="setting-row">
+          <input id="ignore-card" type="checkbox" />
+          <span id="ignore-card-label"></span>
+        </label>
+        <label
+          class="ignored-apps-label"
+          for="ignored-apps"
+          id="ignored-apps-label"
+        ></label>
+        <textarea
+          id="ignored-apps"
+          class="ignored-apps"
+          spellcheck="false"
+        ></textarea>
+        <p id="settings-help" class="settings-help"></p>
+        <div class="settings-actions">
+          <button id="cancel-settings" type="button"></button>
+          <button
+            id="save-settings"
+            class="save-settings"
+            type="button"
+          ></button>
+        </div>
+      </div>
+    </section>
+    <section id="confirm-overlay" class="confirm-overlay" hidden>
+      <div class="confirm-card" role="dialog" aria-modal="true">
+        <h2 id="confirm-title" class="confirm-title"></h2>
+        <p id="confirm-message" class="confirm-message"></p>
+        <div class="confirm-actions">
+          <button
+            id="confirm-cancel"
+            class="confirm-cancel"
+            type="button"
+          ></button>
+          <button
+            id="confirm-clear"
+            class="confirm-clear"
+            type="button"
+          ></button>
+        </div>
+      </div>
+    </section>
+    <div id="copy-toast" class="copy-toast" role="status" hidden></div>
+    <footer class="footer">
+      <span id="stats"></span
+      ><button id="clear" class="clear" type="button"></button>
+    </footer>
+    <script>
+      const invoke = window.__TAURI__?.core?.invoke;
+      const isChinese = navigator.language.toLowerCase().startsWith("zh");
+      const text = isChinese
+        ? {
+            search: "搜索剪贴板历史…",
+            empty: "暂无剪贴板历史",
+            noMatch: "没有匹配记录",
+            item: "条记录",
+            copy: "复制",
+            expand: "展开",
+            collapse: "收起",
+            remove: "删除",
+            clear: "清空",
+            close: "关闭剪贴板历史",
+            confirmTitle: "清空全部历史？",
+            confirmMessage: "全部剪贴板历史将被永久删除，此操作不可撤销。",
+            confirmClear: "确认清空",
+            copied: "已复制到剪贴板",
+            now: "刚刚",
+            minute: "分钟前",
+            hour: "小时前",
+            day: "天前",
+            failed: "加载失败",
+            settings: "隐私过滤设置",
+            ignoreShort: "忽略少于 2 个字符的文本",
+            ignorePassword: "忽略密码样式文本（6-30 位且包含字母和数字）",
+            ignoreCard: "忽略有效银行卡号（13-19 位，Luhn 校验）",
+            ignoredApps: "不记录这些来源应用",
+            settingsHelp:
+              "每行填写一个应用名；历史记录会显示检测到的来源名称。",
+            cancel: "取消",
+            save: "保存",
+          }
+        : {
+            search: "Search clipboard history…",
+            empty: "No clipboard history yet",
+            noMatch: "No matching records",
+            item: "items",
+            copy: "Copy",
+            expand: "Expand",
+            collapse: "Collapse",
+            remove: "Delete",
+            clear: "Clear all",
+            close: "Close clipboard history",
+            confirmTitle: "Clear all history?",
+            confirmMessage:
+              "All clipboard history will be permanently deleted. This cannot be undone.",
+            confirmClear: "Clear all",
+            copied: "Copied to clipboard",
+            now: "just now",
+            minute: "min ago",
+            hour: "hr ago",
+            day: "days ago",
+            failed: "Failed to load",
+            settings: "Privacy filters",
+            ignoreShort: "Ignore text shorter than 2 characters",
+            ignorePassword:
+              "Ignore password-like text (6-30 characters with letters and digits)",
+            ignoreCard:
+              "Ignore valid card numbers (13-19 digits, Luhn checked)",
+            ignoredApps: "Do not record from these applications",
+            settingsHelp:
+              "Enter one application name per line. Detected source names appear in history.",
+            cancel: "Cancel",
+            save: "Save",
+          };
+      document.documentElement.lang = isChinese ? "zh-CN" : "en";
+      const listElement = document.getElementById("list");
+      const searchElement = document.getElementById("search");
+      const statsElement = document.getElementById("stats");
+      const clearElement = document.getElementById("clear");
+      const closeElement = document.getElementById("close-panel");
+      const settingsButton = document.getElementById("settings-button");
+      const settingsOverlay = document.getElementById("settings-overlay");
+      const ignoreShortElement = document.getElementById("ignore-short");
+      const ignorePasswordElement = document.getElementById("ignore-password");
+      const ignoreCardElement = document.getElementById("ignore-card");
+      const ignoredAppsElement = document.getElementById("ignored-apps");
+      const cancelSettingsElement = document.getElementById("cancel-settings");
+      const saveSettingsElement = document.getElementById("save-settings");
+      const confirmOverlay = document.getElementById("confirm-overlay");
+      const confirmCancelElement = document.getElementById("confirm-cancel");
+      const confirmClearElement = document.getElementById("confirm-clear");
+      const copyToastElement = document.getElementById("copy-toast");
+      searchElement.placeholder = text.search;
+      clearElement.textContent = text.clear;
+      closeElement.title = text.close;
+      closeElement.setAttribute("aria-label", text.close);
+      settingsButton.title = text.settings;
+      settingsButton.setAttribute("aria-label", text.settings);
+      document.getElementById("settings-title").textContent = text.settings;
+      document.getElementById("ignore-short-label").textContent =
+        text.ignoreShort;
+      document.getElementById("ignore-password-label").textContent =
+        text.ignorePassword;
+      document.getElementById("ignore-card-label").textContent =
+        text.ignoreCard;
+      document.getElementById("ignored-apps-label").textContent =
+        text.ignoredApps;
+      document.getElementById("settings-help").textContent = text.settingsHelp;
+      cancelSettingsElement.textContent = text.cancel;
+      saveSettingsElement.textContent = text.save;
+      document.getElementById("confirm-title").textContent = text.confirmTitle;
+      document.getElementById("confirm-message").textContent =
+        text.confirmMessage;
+      confirmCancelElement.textContent = text.cancel;
+      confirmClearElement.textContent = text.confirmClear;
+      copyToastElement.textContent = text.copied;
+      let searchTimer;
+      let copyToastTimer;
+      let currentSettings;
+
+      function relativeTime(value) {
+        const minutes = Math.max(
+          0,
+          Math.floor((Date.now() - new Date(value).getTime()) / 60000),
+        );
+        if (minutes < 1) return text.now;
+        if (minutes < 60) return `${minutes} ${text.minute}`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} ${text.hour}`;
+        return `${Math.floor(hours / 24)} ${text.day}`;
+      }
+
+      async function call(command, args) {
+        if (!invoke) throw new Error("Tauri IPC unavailable");
+        return invoke(command, args);
+      }
+
+      function showCopyToast(x, y) {
+        clearTimeout(copyToastTimer);
+        copyToastElement.hidden = false;
+        const rect = copyToastElement.getBoundingClientRect();
+        const margin = 8;
+        const left = Math.min(
+          Math.max(margin, x + 10),
+          window.innerWidth - rect.width - margin,
+        );
+        const top = Math.min(
+          Math.max(margin, y + 10),
+          window.innerHeight - rect.height - margin,
+        );
+        copyToastElement.style.left = `${left}px`;
+        copyToastElement.style.top = `${top}px`;
+        copyToastTimer = setTimeout(() => {
+          copyToastElement.hidden = true;
+        }, 3000);
+      }
+
+      async function copyItem(id, x, y) {
+        await call("clipboard_copy_item", { id });
+        showCopyToast(x, y);
+      }
+
+      function render(items) {
+        listElement.replaceChildren();
+        if (!items.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = searchElement.value.trim()
+            ? text.noMatch
+            : text.empty;
+          listElement.append(empty);
+          return;
+        }
+        for (const item of items) {
+          const row = document.createElement("article");
+          row.className = "item";
+          row.tabIndex = 0;
+          const preview = document.createElement("div");
+          preview.className = "preview";
+          preview.textContent = item.content;
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = item.source_app
+            ? `${relativeTime(item.created_at)} · ${item.source_app}`
+            : relativeTime(item.created_at);
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          const copy = document.createElement("button");
+          copy.className = "icon-button";
+          copy.type = "button";
+          copy.textContent = text.copy;
+          copy.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            await copyItem(item.id, event.clientX, event.clientY);
+          });
+          actions.append(copy);
+          if (item.content.length > 100) {
+            const expand = document.createElement("button");
+            expand.className = "icon-button";
+            expand.type = "button";
+            expand.textContent = text.expand;
+            expand.addEventListener("click", (event) => {
+              event.stopPropagation();
+              const expanded = row.classList.toggle("expanded");
+              expand.textContent = expanded ? text.collapse : text.expand;
+            });
+            actions.append(expand);
+          }
+          const remove = document.createElement("button");
+          remove.className = "icon-button delete";
+          remove.type = "button";
+          remove.textContent = text.remove;
+          remove.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            await call("clipboard_delete_item", { id: item.id });
+            await refresh();
+          });
+          actions.append(remove);
+          row.append(preview, meta, actions);
+          row.addEventListener("click", (event) =>
+            copyItem(item.id, event.clientX, event.clientY),
+          );
+          row.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+              const rect = row.getBoundingClientRect();
+              copyItem(
+                item.id,
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+              );
+            }
+          });
+          listElement.append(row);
+        }
+      }
+
+      async function refresh() {
+        try {
+          const query = searchElement.value.trim();
+          const items = query
+            ? await call("clipboard_search", { query, limit: 100 })
+            : await call("clipboard_list", { limit: 100 });
+          render(items);
+          const stats = await call("clipboard_stats");
+          statsElement.textContent = isChinese
+            ? `${stats.total} ${text.item} / ${stats.max_items}`
+            : `${stats.total} ${text.item} / ${stats.max_items}`;
+          clearElement.disabled = stats.total === 0;
+        } catch (error) {
+          listElement.innerHTML = `<div class="error">${text.failed}</div>`;
+        }
+      }
+
+      async function openSettings() {
+        currentSettings = await call("clipboard_get_settings");
+        ignoreShortElement.checked = currentSettings.ignore_short_text;
+        ignorePasswordElement.checked = currentSettings.ignore_password_like;
+        ignoreCardElement.checked = currentSettings.ignore_credit_card_like;
+        ignoredAppsElement.value = (currentSettings.ignored_apps || []).join(
+          "\n",
+        );
+        settingsOverlay.hidden = false;
+        ignoredAppsElement.focus();
+      }
+
+      async function saveSettings() {
+        const ignoredApps = ignoredAppsElement.value
+          .split(/[\n,]/)
+          .map((value) => value.trim())
+          .filter(Boolean);
+        currentSettings = await call("clipboard_update_settings", {
+          settings: {
+            ...currentSettings,
+            ignore_short_text: ignoreShortElement.checked,
+            ignore_password_like: ignorePasswordElement.checked,
+            ignore_credit_card_like: ignoreCardElement.checked,
+            ignored_apps: ignoredApps,
+          },
+        });
+        settingsOverlay.hidden = true;
+        searchElement.focus();
+      }
+
+      searchElement.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(refresh, 120);
+      });
+      clearElement.addEventListener("click", () => {
+        confirmOverlay.hidden = false;
+        confirmCancelElement.focus();
+      });
+      confirmCancelElement.addEventListener("click", () => {
+        confirmOverlay.hidden = true;
+        clearElement.focus();
+      });
+      confirmClearElement.addEventListener("click", async () => {
+        await call("clipboard_clear_all");
+        confirmOverlay.hidden = true;
+        await refresh();
+        searchElement.focus();
+      });
+      closeElement.addEventListener("click", () =>
+        call("clipboard_hide_panel"),
+      );
+      settingsButton.addEventListener("click", () => openSettings());
+      cancelSettingsElement.addEventListener("click", () => {
+        settingsOverlay.hidden = true;
+        searchElement.focus();
+      });
+      saveSettingsElement.addEventListener("click", () => saveSettings());
+      settingsOverlay.addEventListener("click", (event) => {
+        if (event.target === settingsOverlay) settingsOverlay.hidden = true;
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        settingsOverlay.hidden = true;
+        confirmOverlay.hidden = true;
+        call("clipboard_hide_panel");
+      });
+      async function openWithQuery(query) {
+        searchElement.value = query || "";
+        await refresh();
+        searchElement.focus();
+        searchElement.select();
+      }
+
+      window.pakeClipboardPanel = { refresh, openWithQuery };
+      refresh();
+      searchElement.focus();
+    </script>
+  </body>
+</html>

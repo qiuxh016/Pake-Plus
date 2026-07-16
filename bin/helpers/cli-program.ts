@@ -291,6 +291,28 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         .default(DEFAULT.microphone)
         .hideHelp(),
     )
+    .addOption(
+      new Option(
+        '--clipboard',
+        'Enable system clipboard history management',
+      ).default(DEFAULT.clipboard),
+    )
+    .addOption(
+      new Option(
+        '--clipboard-max <number>',
+        'Maximum clipboard history items (500-5000)',
+      )
+        .default(DEFAULT.clipboardMax)
+        .argParser((value) => {
+          const max = Number(value);
+          if (!Number.isInteger(max) || max < 500 || max > 5000) {
+            throw new Error(
+              '--clipboard-max must be an integer between 500 and 5000',
+            );
+          }
+          return max;
+        }),
+    )
     .version(packageJson.version, '-v, --version')
     .configureHelp({
       sortSubcommands: true,

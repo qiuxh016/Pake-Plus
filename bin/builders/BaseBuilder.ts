@@ -377,6 +377,10 @@ export default abstract class BaseBuilder {
   protected getBuildFeatures(): string[] {
     const features = ['cli-build'];
 
+    if (this.options.clipboard) {
+      features.push('clipboard');
+    }
+
     // Add macos-proxy feature for modern macOS (Darwin 23+ = macOS 14+)
     if (IS_MAC) {
       const macOSVersion = this.getMacOSMajorVersion();

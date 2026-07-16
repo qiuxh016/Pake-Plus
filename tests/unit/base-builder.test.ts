@@ -308,6 +308,26 @@ describe('BaseBuilder guards', () => {
     expect(command).toContain('--features cli-build');
   });
 
+  it('compiles clipboard support only when requested', () => {
+    const enabled = new TestBuilder({
+      debug: false,
+      targets: 'deb',
+      clipboard: true,
+    } as any);
+    const disabled = new TestBuilder({
+      debug: false,
+      targets: 'deb',
+      clipboard: false,
+    } as any);
+
+    expect((enabled as any).getBuildCommand('pnpm')).toContain(
+      '--features cli-build,clipboard',
+    );
+    expect((disabled as any).getBuildCommand('pnpm')).not.toContain(
+      ',clipboard',
+    );
+  });
+
   it('copies Windows build artifacts from CARGO_TARGET_DIR when it is set', () => {
     const cargoTargetDir = path.join(process.cwd(), '.short-cargo-target');
     process.env.CARGO_TARGET_DIR = cargoTargetDir;

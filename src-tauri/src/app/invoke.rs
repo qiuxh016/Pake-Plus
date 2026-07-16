@@ -1,6 +1,6 @@
 use crate::util::{
-    check_file_or_append, get_download_message_with_lang, sanitize_download_filename, show_toast,
-    MessageType,
+    check_file_or_append, get_download_dir, get_download_message_with_lang,
+    sanitize_download_filename, show_toast, MessageType,
 };
 use std::fs::File;
 use std::io::Write;
@@ -91,10 +91,8 @@ pub async fn download_file(app: AppHandle, params: DownloadFileParams) -> Result
         &get_download_message_with_lang(MessageType::Start, params.language.clone()),
     );
 
-    let download_dir = app
-        .path()
-        .download_dir()
-        .map_err(|e| format!("Failed to get download dir: {}", e))?;
+    let download_dir =
+        get_download_dir(&app).map_err(|e| format!("Failed to get download dir: {}", e))?;
 
     let output_path = download_dir.join(sanitize_download_filename(&params.filename));
 

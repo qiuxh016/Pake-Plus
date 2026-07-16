@@ -773,7 +773,7 @@ async function mergeIcons(options, name, tauriConf, platform, safeAppName) {
     delete tauriConf.app.trayIcon;
 }
 async function injectCustomCode(options, tauriConf) {
-    const { inject, proxyUrl, multiInstance, multiWindow, wasm } = options;
+    const { inject, proxyUrl, multiInstance, multiWindow, wasm, clipboard, clipboardMax, } = options;
     const injectFilePath = path.join(npmDirectory, 'src-tauri/src/inject/custom.js');
     if (inject?.length > 0) {
         const injectArray = Array.isArray(inject) ? inject : [inject];
@@ -792,6 +792,7 @@ async function injectCustomCode(options, tauriConf) {
     tauriConf.pake.proxy_url = proxyUrl || '';
     tauriConf.pake.multi_instance = multiInstance;
     tauriConf.pake.multi_window = multiWindow;
+    applyClipboardConfig({ clipboard, clipboardMax }, tauriConf.pake);
     if (wasm) {
         tauriConf.app.security = {
             headers: {
@@ -800,6 +801,10 @@ async function injectCustomCode(options, tauriConf) {
             },
         };
     }
+}
+function applyClipboardConfig(options, config) {
+    config.clipboard = options.clipboard;
+    config.clipboard_max = options.clipboardMax;
 }
 async function generateMacEntitlements(camera, microphone) {
     const entitlementEntries = [];
@@ -1276,6 +1281,9 @@ class BaseBuilder {
     }
     getBuildFeatures() {
         const features = ['cli-build'];
+        if (this.options.clipboard) {
+            features.push('clipboard');
+        }
         // Add macos-proxy feature for modern macOS (Darwin 23+ = macOS 14+)
         if (IS_MAC) {
             const macOSVersion = this.getMacOSMajorVersion();
@@ -2796,6 +2804,8 @@ const DEFAULT_PAKE_OPTIONS = {
     install: false,
     camera: false,
     microphone: false,
+    clipboard: false,
+    clipboardMax: 2000,
 };
 
 function validateNumberInput(value) {
@@ -2974,6 +2984,16 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         .addOption(new Option('--microphone', 'Request microphone permission on macOS')
         .default(DEFAULT_PAKE_OPTIONS.microphone)
         .hideHelp())
+        .addOption(new Option('--clipboard', 'Enable system clipboard history management').default(DEFAULT_PAKE_OPTIONS.clipboard))
+        .addOption(new Option('--clipboard-max <number>', 'Maximum clipboard history items (500-5000)')
+        .default(DEFAULT_PAKE_OPTIONS.clipboardMax)
+        .argParser((value) => {
+        const max = Number(value);
+        if (!Number.isInteger(max) || max < 500 || max > 5000) {
+            throw new Error('--clipboard-max must be an integer between 500 and 5000');
+        }
+        return max;
+    }))
         .version(packageJson.version, '-v, --version')
         .configureHelp({
         sortSubcommands: true,

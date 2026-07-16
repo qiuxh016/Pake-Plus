@@ -21,6 +21,12 @@ const WEBKIT_DISABLE_COMPOSITING_MODE: &str = "WEBKIT_DISABLE_COMPOSITING_MODE";
 #[cfg(target_os = "linux")]
 const GDK_BACKEND: &str = "GDK_BACKEND";
 
+#[cfg(feature = "clipboard")]
+use app::clipboard::{
+    clipboard_clear_all, clipboard_copy_item, clipboard_delete_item, clipboard_get_settings,
+    clipboard_hide_panel, clipboard_list, clipboard_search, clipboard_show_panel, clipboard_stats,
+    clipboard_update_settings, init_clipboard_state,
+};
 use app::{
     invoke::{
         clear_dock_badge, download_file, increment_dock_badge, send_notification, set_dock_badge,
@@ -155,7 +161,16 @@ pub fn run_app() {
     let start_to_tray = pake_config.windows[0].start_to_tray && show_system_tray; // Only valid when tray is enabled
     let multi_instance = pake_config.multi_instance;
     let multi_window = pake_config.multi_window;
+    #[cfg(feature = "clipboard")]
+    let clipboard_enabled = pake_config.clipboard;
+    #[cfg(feature = "clipboard")]
+    let clipboard_max = pake_config.clipboard_max;
     let _enable_find = pake_config.windows[0].enable_find;
+    #[cfg(feature = "clipboard")]
+    let package_name = tauri_config
+        .product_name
+        .clone()
+        .unwrap_or_else(|| "pake".to_string());
 
     let window_state_plugin = WindowStatePlugin::default()
         .with_state_flags(if init_fullscreen {
@@ -192,8 +207,67 @@ pub fn run_app() {
         ));
     }
 
-    app_builder
-        .invoke_handler(tauri::generate_handler![
+    #[cfg(feature = "clipboard")]
+    {
+        app_builder = app_builder
+            .register_uri_scheme_protocol(
+                app::clipboard::panel::CLIPBOARD_PROTOCOL,
+                |context, _request| {
+                    let allowed =
+                        context.webview_label() == app::clipboard::panel::CLIPBOARD_PANEL_LABEL;
+                    let (status, body) = if allowed {
+                        (
+                            200,
+                            include_bytes!("../assets/clipboard-panel.html").as_slice(),
+                        )
+                    } else {
+                        (403, b"Forbidden".as_slice())
+                    };
+                    tauri::http::Response::builder()
+                        .status(status)
+                        .header("Content-Type", "text/html; charset=utf-8")
+                        .header("Cache-Control", "no-store")
+                        .body(body.to_vec())
+                        .expect("valid clipboard protocol response")
+                },
+            )
+            .invoke_handler(tauri::generate_handler![
+                download_file,
+                send_notification,
+                increment_dock_badge,
+                set_dock_badge,
+                set_dock_badge_label,
+                clear_dock_badge,
+                update_theme_mode,
+                set_zoom,
+                get_settings,
+                save_settings,
+                reset_settings,
+                validate_settings,
+                get_module_stats,
+                export_data,
+                import_data,
+                preview_import,
+                rollback_settings,
+                list_backups,
+                get_diagnostics,
+                copy_diagnostics_report,
+                clipboard_list,
+                clipboard_search,
+                clipboard_copy_item,
+                clipboard_delete_item,
+                clipboard_clear_all,
+                clipboard_stats,
+                clipboard_hide_panel,
+                clipboard_show_panel,
+                clipboard_get_settings,
+                clipboard_update_settings,
+            ]);
+    }
+
+    #[cfg(not(feature = "clipboard"))]
+    {
+        app_builder = app_builder.invoke_handler(tauri::generate_handler![
             download_file,
             send_notification,
             increment_dock_badge,
@@ -214,7 +288,10 @@ pub fn run_app() {
             list_backups,
             get_diagnostics,
             copy_diagnostics_report,
-        ])
+        ]);
+    }
+
+    app_builder
         .setup(move |app| {
             app.manage(MultiWindowState::new(
                 pake_config.clone(),
@@ -234,19 +311,45 @@ pub fn run_app() {
             // --- Menu Construction End ---
 
             let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
+
+            #[cfg(feature = "clipboard")]
+            let clipboard_listening = if clipboard_enabled {
+                let clipboard_state = init_clipboard_state(
+                    app.app_handle(),
+                    clipboard_enabled,
+                    clipboard_max,
+                    package_name.clone(),
+                )
+                .map_err(|error| tauri::Error::Io(std::io::Error::other(error)))?;
+                let clipboard_listening = clipboard_state.is_enabled();
+                app.manage(clipboard_state);
+                clipboard_listening
+            } else {
+                false
+            };
+            #[cfg(not(feature = "clipboard"))]
+            let clipboard_listening = false;
+
             set_system_tray(
                 app.app_handle(),
                 show_system_tray,
                 &pake_config.system_tray_path,
                 init_fullscreen,
                 multi_window,
+                clipboard_listening,
+                clipboard_listening,
+            )?;
+            set_global_shortcut(
+                app.app_handle(),
+                activation_shortcut,
+                init_fullscreen,
+                clipboard_listening,
             )?;
             app::setup::update_tray_status(app.app_handle());
             let health = app::settings::run_health_check(app.app_handle());
             for msg in &health {
                 eprintln!("[Pake] Health: {}", msg);
             }
-            set_global_shortcut(app.app_handle(), activation_shortcut, init_fullscreen)?;
 
             // Register settings panel shortcut (Ctrl+Shift+,)
             {
@@ -297,6 +400,12 @@ pub fn run_app() {
             Ok(())
         })
         .on_window_event(move |_window, _event| {
+            #[cfg(feature = "clipboard")]
+            if _window.label() == app::clipboard::panel::CLIPBOARD_PANEL_LABEL {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                    api.prevent_close();
+                }
+            }
             if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
                 if hide_on_close && _window.label() == "pake" {
                     // Hide window when hide_on_close is enabled (regardless of tray status)

@@ -92,6 +92,30 @@ describe('CLI options', () => {
     expect(option?.hidden).toBe(true);
   });
 
+  it('registers --clipboard option', () => {
+    const option = program.options.find((item) => item.long === '--clipboard');
+
+    expect(option).toBeDefined();
+    expect(option?.defaultValue).toBe(false);
+    expect(option?.hidden).toBe(false);
+  });
+
+  it('validates --clipboard-max range', () => {
+    const option = program.options.find(
+      (item) => item.long === '--clipboard-max',
+    );
+
+    expect(option).toBeDefined();
+    expect(option?.defaultValue).toBe(2000);
+    expect(option?.parseArg?.('5000', undefined)).toBe(5000);
+    expect(() => option?.parseArg?.('499', undefined)).toThrow(
+      '--clipboard-max must be an integer between 500 and 5000',
+    );
+    expect(() => option?.parseArg?.('6000', undefined)).toThrow(
+      '--clipboard-max must be an integer between 500 and 5000',
+    );
+  });
+
   it('rejects malformed zoom values instead of truncating them', () => {
     const option = program.options.find((item) => item.long === '--zoom');
 
@@ -121,5 +145,15 @@ describe('CLI options', () => {
   it('rejects negative numeric option values', () => {
     expect(() => validateNumberInput('-100')).toThrow('Must not be negative.');
     expect(validateNumberInput('0')).toBe(0);
+  });
+
+  it('parses clipboard packaging flags together', () => {
+    program.parse(
+      ['https://example.com', '--clipboard', '--clipboard-max', '5000'],
+      { from: 'user' },
+    );
+
+    expect(program.opts().clipboard).toBe(true);
+    expect(program.opts().clipboardMax).toBe(5000);
   });
 });

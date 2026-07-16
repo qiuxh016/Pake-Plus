@@ -39,5 +39,7 @@
   "inject": [],
   "proxy_url": "",
   "multi_instance": false,
-  "multi_window": false
+  "multi_window": false,
+  "clipboard": false,
+  "clipboard_max": 2000
 }

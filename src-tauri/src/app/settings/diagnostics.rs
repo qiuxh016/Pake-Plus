@@ -49,7 +49,12 @@ pub fn collect_diagnostics(app: &AppHandle) -> Diagnostics {
     let (disk_total_mb, disk_free_mb) = disks
         .list()
         .first()
-        .map(|d| (d.total_space() / 1024 / 1024, d.available_space() / 1024 / 1024))
+        .map(|d| {
+            (
+                d.total_space() / 1024 / 1024,
+                d.available_space() / 1024 / 1024,
+            )
+        })
         .unwrap_or((0, 0));
 
     mod built_info {
@@ -59,7 +64,9 @@ pub fn collect_diagnostics(app: &AppHandle) -> Diagnostics {
     Diagnostics {
         app_version: built_info::PKG_VERSION.into(),
         git_commit: built_info::GIT_COMMIT_HASH.unwrap_or("unknown").into(),
-        build_time: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+        build_time: chrono::Utc::now()
+            .format("%Y-%m-%d %H:%M:%S UTC")
+            .to_string(),
         rustc_version: built_info::RUSTC_VERSION.into(),
         target_triple: built_info::TARGET.into(),
         os_name,
