@@ -1,4 +1,5 @@
-(() => { document.title += " [C侧栏已注入]";
+(() => {
+  document.title += " [C侧栏已注入]";
   if (window.__pakeClipboardSidebarInstalled) return;
   window.__pakeClipboardSidebarInstalled = true;
 

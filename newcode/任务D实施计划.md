@@ -6,12 +6,12 @@
 
 D 同学负责四个独立模块，都不依赖 A/B/C 的代码：
 
-| 模块 | 核心工作 | 新增文件数 |
-|---|---|---|
-| 设置面板 | HTML 页面 + Rust 读写 JSON + 托盘入口 | 2（settings.html + settings.rs） |
-| 数据导出/导入 | ZIP 打包/解压 + 文件遍历 | 并入 settings.rs |
-| 系统诊断 | sysinfo 采集 + built 编译信息 + 剪贴板报告 | 并入 settings.rs |
-| 视频制作 | 录制 + 剪辑（最后阶段） | 0（纯操作） |
+| 模块          | 核心工作                                   | 新增文件数                       |
+| ------------- | ------------------------------------------ | -------------------------------- |
+| 设置面板      | HTML 页面 + Rust 读写 JSON + 托盘入口      | 2（settings.html + settings.rs） |
+| 数据导出/导入 | ZIP 打包/解压 + 文件遍历                   | 并入 settings.rs                 |
+| 系统诊断      | sysinfo 采集 + built 编译信息 + 剪贴板报告 | 并入 settings.rs                 |
+| 视频制作      | 录制 + 剪辑（最后阶段）                    | 0（纯操作）                      |
 
 **新增 Rust 依赖**（追加到 `Cargo.toml`）：
 
@@ -37,6 +37,7 @@ built = "0.7"          # 编译期注入版本/git信息
 **说明**：先跑通编译，确保新 crate 能正常下载和构建。这是所有后续工作的基础。
 
 **操作**：
+
 1. 在 `Cargo.toml` 的 `[dependencies]` 末尾追加 `zip`、`sysinfo`、`arboard`、`chrono`
 2. 在 `[build-dependencies]` 追加 `built`
 3. 修改 `build.rs`，在 tauri_build 之后调用 `built::write_built_file()` —— 这会生成一个 `built.rs` 文件到 `OUT_DIR`，Rust 代码可以通过 `include!` 引入，获取版本号、git commit、编译时间等信息
@@ -51,6 +52,7 @@ built = "0.7"          # 编译期注入版本/git信息
 **说明**：这是其他所有功能的基础。先把配置的读和写搞定，不涉及 UI。
 
 **操作**：
+
 1. 新建 `src-tauri/src/app/settings.rs`
 2. 定义 `AppSettings` 结构体，聚合四个分类的设置项：
 
@@ -80,6 +82,7 @@ AppSettings
 **说明**：把上一步的函数包装为 Tauri command，注册到 `lib.rs`，让前端能调用。
 
 **操作**：
+
 1. 在 `settings.rs` 中定义两个 `#[tauri::command]`：
    - `fn get_settings(app: AppHandle) -> AppSettings`
    - `fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String>`
@@ -99,6 +102,7 @@ AppSettings
 **说明**：这是一个纯前端工作。新建一个独立 HTML 文件，内嵌 CSS 和 JS，不依赖任何框架。
 
 **操作**：
+
 1. 新建 `src-tauri/assets/settings.html`
 2. 布局：左侧导航栏 + 右侧内容区
 
@@ -131,6 +135,7 @@ AppSettings
 **说明**：让用户能打开设置窗口。
 
 **操作**：
+
 1. 在 `settings.rs` 中写一个函数 `pub fn open_settings_window(app: &AppHandle)`：
    - 用 `WebviewWindowBuilder` 创建新窗口
    - url 指向 `assets/settings.html`
@@ -148,6 +153,7 @@ AppSettings
 **说明**：这是 Rust 工作量较大的部分。遍历数据目录，打包为 ZIP。
 
 **操作**：
+
 1. 在 `settings.rs` 中新增 `#[command] fn export_data(app: AppHandle) -> Result<String, String>`
 2. 函数逻辑：
    - 创建临时目录 `$TEMP/pake-export-temp/`
@@ -174,6 +180,7 @@ AppSettings
 **说明**：解压 ZIP，校验，恢复文件。
 
 **操作**：
+
 1. 在 `settings.rs` 中新增 `#[command] fn import_data(app: AppHandle) -> Result<String, String>`
 2. 函数逻辑：
    - 弹出系统文件选择对话框，限定 `.zip` 文件
@@ -195,6 +202,7 @@ AppSettings
 **说明**：用 `sysinfo` + `built` 采集系统和编译信息。
 
 **操作**：
+
 1. 在 `settings.rs` 中新增一个函数 `fn collect_diagnostics() -> Diagnostics`
 2. 定义 `Diagnostics` 结构体，字段：
    ```rust
@@ -229,6 +237,7 @@ AppSettings
 **说明**：将诊断信息格式化为纯文本，写入剪贴板。
 
 **操作**：
+
 1. 在 `settings.rs` 中新增 `#[command] fn copy_diagnostics_report(app: AppHandle) -> Result<(), String>`
 2. 函数逻辑：
    - 调用 `collect_diagnostics()` 获取数据
@@ -257,6 +266,7 @@ AppSettings
 **说明**：此时所有 Rust 功能已就绪。把 HTML 的交互补齐，联调一遍。
 
 **操作**：
+
 1. 确保设置面板所有标签页正确显示
 2. 逐项测试：修改 → 保存 → 重启应用 → 验证配置持久化
 3. 测试导出/导入流程完整闭环
@@ -272,6 +282,7 @@ AppSettings
 **说明**：3 分钟介绍视频。建议最后两天做，熟练后一次录完。
 
 **操作**：
+
 1. 准备好演示素材页面（一个有广告的页面、一个含图片的页面用于测试缓存、一个随手复制的场景）
 2. 用 OBS 或系统自带录屏工具录制
 3. 按文档中的分镜表顺序
@@ -288,20 +299,20 @@ AppSettings
 
 ### 新建文件
 
-| 文件 | 内容 |
-|---|---|
-| `src-tauri/src/app/settings.rs` | 设置读写、数据导出/导入、诊断采集、IPC 命令 |
-| `src-tauri/assets/settings.html` | 设置面板页面（内嵌 CSS + JS） |
+| 文件                             | 内容                                        |
+| -------------------------------- | ------------------------------------------- |
+| `src-tauri/src/app/settings.rs`  | 设置读写、数据导出/导入、诊断采集、IPC 命令 |
+| `src-tauri/assets/settings.html` | 设置面板页面（内嵌 CSS + JS）               |
 
 ### 修改文件
 
-| 文件 | 修改内容 |
-|---|---|
-| `src-tauri/Cargo.toml` | 追加 zip、sysinfo、arboard、chrono、built |
-| `src-tauri/build.rs` | 追加 built 调用 |
-| `src-tauri/src/app/mod.rs` | 加 `pub mod settings;` |
-| `src-tauri/src/lib.rs` | use 导入 + `generate_handler![]` 追加命令 |
-| `src-tauri/src/app/setup.rs` | 托盘菜单加 "Settings" 项 + 事件处理 |
+| 文件                         | 修改内容                                  |
+| ---------------------------- | ----------------------------------------- |
+| `src-tauri/Cargo.toml`       | 追加 zip、sysinfo、arboard、chrono、built |
+| `src-tauri/build.rs`         | 追加 built 调用                           |
+| `src-tauri/src/app/mod.rs`   | 加 `pub mod settings;`                    |
+| `src-tauri/src/lib.rs`       | use 导入 + `generate_handler![]` 追加命令 |
+| `src-tauri/src/app/setup.rs` | 托盘菜单加 "Settings" 项 + 事件处理       |
 
 **不会冲突**：这些文件是 A/B/C 也需要改的（`mod.rs`、`lib.rs`、`setup.rs`、`Cargo.toml`），但改的位置不重叠——各自加各自的 use、各自的 handler、各自的菜单项。合并时只需按行拼接。
 
@@ -309,15 +320,15 @@ AppSettings
 
 ## 四、可以独立完成的证据
 
-| 步骤 | 是否需要等 A/B/C | 说明 |
-|---|---|---|
-| 1-3（环境+Rust层） | 否 | 纯 D 的代码 |
-| 4（HTML 页面） | 否 | 可用假数据开发 |
-| 5（托盘入口） | 否 | 不依赖 A/B/C 代码 |
-| 6-7（导出导入） | **部分** | 目前只处理通用文件（settings.json），A/B/C 的缓存/剪贴板数据路径现在用占位符，后续加一行路径即可 |
-| 8-9（诊断） | 否 | 纯系统信息，不依赖任何模块 |
-| 10（联调） | 否 | 设置面板本身功能闭环 |
-| 11（视频） | 是 | 需要 A/B/C 功能完成后录他们的演示 |
+| 步骤               | 是否需要等 A/B/C | 说明                                                                                             |
+| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------ |
+| 1-3（环境+Rust层） | 否               | 纯 D 的代码                                                                                      |
+| 4（HTML 页面）     | 否               | 可用假数据开发                                                                                   |
+| 5（托盘入口）      | 否               | 不依赖 A/B/C 代码                                                                                |
+| 6-7（导出导入）    | **部分**         | 目前只处理通用文件（settings.json），A/B/C 的缓存/剪贴板数据路径现在用占位符，后续加一行路径即可 |
+| 8-9（诊断）        | 否               | 纯系统信息，不依赖任何模块                                                                       |
+| 10（联调）         | 否               | 设置面板本身功能闭环                                                                             |
+| 11（视频）         | 是               | 需要 A/B/C 功能完成后录他们的演示                                                                |
 
 ---
 

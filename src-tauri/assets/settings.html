@@ -1,303 +1,940 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
-<title>Pake Plus Settings</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{color-scheme:light dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;font-size:13px;color:#1e293b}
-body{display:flex;height:100vh;overflow:hidden;background:#fff}
-nav{width:120px;background:#f8fafc;flex-shrink:0;border-right:1px solid #f1f5f9;display:flex;flex-direction:column;padding:12px 0}
-.nav-item{display:flex;align-items:center;gap:8px;padding:10px 16px;border:none;background:none;font-size:12px;color:#64748b;cursor:pointer;text-align:left;transition:all .15s}
-.nav-item:hover{background:#f1f5f9;color:#334155}
-.nav-item.active{background:#eff6ff;color:#3b82f6;font-weight:600;border-right:2px solid #3b82f6}
-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.header{padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.header h2{font-size:16px;font-weight:700}
-.header .brand{display:flex;align-items:center;gap:10px}
-.header .logo{width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700}
-.content{flex:1;overflow-y:auto;padding:20px}
-.card{background:#fff;border:1px solid #f1f5f9;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
-.card-title{font-size:12px;font-weight:600;color:#334155;margin-bottom:4px}
-.card-desc{font-size:10px;color:#94a3b8;margin-bottom:12px}
-.row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f8fafc}
-.row-label{font-size:12px;font-weight:500;color:#334155}
-.row-hint{font-size:10px;color:#94a3b8;margin-top:1px}
-.toggle{width:42px;height:24px;background:#cbd5e1;border-radius:12px;cursor:pointer;flex-shrink:0;position:relative;transition:background .2s;border:none}
-.toggle.on{background:#3b82f6}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
-.toggle.on::after{transform:translateX(18px)}
-select{padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;background:#f8fafc;color:#334155;outline:none;cursor:pointer}
-.btn{padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
-.btn-primary{background:#3b82f6;color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.2)}
-.btn-outline{border:1px solid #e2e8f0;background:#fff;color:#64748b}
-.btn-dashed{width:100%;padding:10px;border:1px dashed #3b82f6;border-radius:8px;background:#eff6ff;color:#3b82f6;font-size:13px;cursor:pointer;text-align:center}
-.footer{padding:10px 20px;border-top:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-.footer span{font-size:10px;color:#94a3b8}
-.footer .btns{display:flex;gap:8px}
-.toast{position:fixed;bottom:20px;right:20px;background:#1e293b;color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;z-index:9999}
-.toast.show{opacity:1;transform:translateY(0)}
-textarea{width:100%;min-height:80px;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;font-family:monospace;resize:vertical;color:#334155}
-</style>
-</head>
-<body>
-<nav id="nav"></nav>
-<main>
-<div class="header">
-  <div class="brand"><div class="logo">P</div><h2>Pake Plus</h2></div>
-</div>
-<div class="content" id="content"></div>
-<div class="footer">
-  <span>ESC to close</span>
-  <div class="btns">
-    <button class="btn btn-outline" id="cancelBtn">Cancel</button>
-    <button class="btn btn-primary" id="saveBtn">Save</button>
-  </div>
-</div>
-</main>
-<div class="toast" id="toast"></div>
-<script>
-(function(){
-'use strict';
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <title>Pake Plus Settings</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        color-scheme: light dark;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
+          sans-serif;
+        font-size: 13px;
+        color: #1e293b;
+      }
+      body {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+        background: #fff;
+      }
+      nav {
+        width: 120px;
+        background: #f8fafc;
+        flex-shrink: 0;
+        border-right: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        padding: 12px 0;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border: none;
+        background: none;
+        font-size: 12px;
+        color: #64748b;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.15s;
+      }
+      .nav-item:hover {
+        background: #f1f5f9;
+        color: #334155;
+      }
+      .nav-item.active {
+        background: #eff6ff;
+        color: #3b82f6;
+        font-weight: 600;
+        border-right: 2px solid #3b82f6;
+      }
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+      }
+      .header h2 {
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .header .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .header .logo {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      }
+      .card-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 4px;
+      }
+      .card-desc {
+        font-size: 10px;
+        color: #94a3b8;
+        margin-bottom: 12px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #f8fafc;
+      }
+      .row-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #334155;
+      }
+      .row-hint {
+        font-size: 10px;
+        color: #94a3b8;
+        margin-top: 1px;
+      }
+      .toggle {
+        width: 42px;
+        height: 24px;
+        background: #cbd5e1;
+        border-radius: 12px;
+        cursor: pointer;
+        flex-shrink: 0;
+        position: relative;
+        transition: background 0.2s;
+        border: none;
+      }
+      .toggle.on {
+        background: #3b82f6;
+      }
+      .toggle::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s;
+      }
+      .toggle.on::after {
+        transform: translateX(18px);
+      }
+      select {
+        padding: 6px 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 11px;
+        background: #f8fafc;
+        color: #334155;
+        outline: none;
+        cursor: pointer;
+      }
+      .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: #3b82f6;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+      }
+      .btn-outline {
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #64748b;
+      }
+      .btn-dashed {
+        width: 100%;
+        padding: 10px;
+        border: 1px dashed #3b82f6;
+        border-radius: 8px;
+        background: #eff6ff;
+        color: #3b82f6;
+        font-size: 13px;
+        cursor: pointer;
+        text-align: center;
+      }
+      .footer {
+        padding: 10px 20px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .footer span {
+        font-size: 10px;
+        color: #94a3b8;
+      }
+      .footer .btns {
+        display: flex;
+        gap: 8px;
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #1e293b;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.25s;
+        pointer-events: none;
+        z-index: 9999;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 11px;
+        font-family: monospace;
+        resize: vertical;
+        color: #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="nav"></nav>
+    <main>
+      <div class="header">
+        <div class="brand">
+          <div class="logo">P</div>
+          <h2>Pake Plus</h2>
+        </div>
+      </div>
+      <div class="content" id="content"></div>
+      <div class="footer">
+        <span>ESC to close</span>
+        <div class="btns">
+          <button class="btn btn-outline" id="cancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="saveBtn">Save</button>
+        </div>
+      </div>
+    </main>
+    <div class="toast" id="toast"></div>
+    <script>
+      (function () {
+        "use strict";
 
-var T='general', dirty=false, settings=null;
-var I=function(c,a){return(window.__TAURI_INTERNALS__||window.__TAURI__||{}).core?.invoke(c,a)||Promise.reject('IPC unavailable')};
+        var T = "general",
+          dirty = false,
+          settings = null;
+        var I = function (c, a) {
+          return (
+            (window.__TAURI_INTERNALS__ || window.__TAURI__ || {}).core?.invoke(
+              c,
+              a,
+            ) || Promise.reject("IPC unavailable")
+          );
+        };
 
-// i18n
-var lang='zh';
-var L={zh:{general:'一般',adblock:'广告拦截',cache:'离线缓存',clipboard:'剪贴板',data:'数据管理',about:'关于',
-  gt:'一般设置',gd:'应用外观与行为',tl:'暗色主题',th:'切换面板配色',ll:'界面语言',rl:'恢复默认',rh:'重置为出厂值',rb:'恢复默认',
-  at:'广告拦截',ad:'基于 EasyList 规则引擎',ae:'启用拦截',ah:'自动过滤广告与跟踪',ar:'自定义规则',arh:'每行一条，||匹配域名 ##隐藏元素',arb:'高级',
-  ct:'离线缓存',cd:'HTTP 代理缓存，断网也能浏览',ce:'启用缓存',ceh:'自动缓存浏览资源',cl:'缓存上限/MB',cs:'统计',ch:'命中率(近1小时)',
-  pt:'剪贴板管理',pd:'系统级监听，历史记录一键复用',pe:'启用监听',peh:'自动记录剪贴板变化',pm:'最大记录数',pr:'保留天数',ps:'忽略短文本',psh:'少于2字符不记录',
-  ptest:'打开测试面板',ptesth:'展开功能C的测试面板（右侧边栏）',
-  dt:'数据管理',dd:'一键导出或导入数据',de:'导出数据',deb:'导出',ded:'打包为 .pake-data.zip',di:'导入数据',dib:'导入',did:'从下载目录读取恢复',
-  ot:'关于',od:'系统诊断',oa:'应用信息',os:'系统信息',oc:'复制诊断报告',copy:'复制',
-  sv:'保存',cc:'取消',ts:'已保存',tl2:'加载失败',tr:'已恢复默认',tf:'保存失败',
-  tex:'导出中...',teok:'导出完成',tef:'导出失败',tim:'导入中...',tiok:'导入完成',tif:'导入失败',
-  tc:'已复制',tcf:'复制失败',v:'版本',gi:'Git',bt:'编译时间',ru:'rustc',tg:'Target',fe:'启用功能',o:'OS',cpu:'CPU',mem:'内存',dk:'磁盘可用',pid:'PID'},
-en:{general:'General',adblock:'Adblock',cache:'Cache',clipboard:'Clipboard',data:'Data',about:'About',
-  gt:'General',gd:'Appearance & behavior',tl:'Dark theme',th:'Toggle colors',ll:'Language',rl:'Reset',rh:'Factory reset',rb:'Reset',
-  at:'Adblock',ad:'EasyList engine',ae:'Enable',ah:'Filter ads & tracking',ar:'Custom rules',arh:'One per line, ||domain ##.selector',arb:'Advanced',
-  ct:'Cache',cd:'HTTP proxy, offline browsing',ce:'Enable',ceh:'Auto-cache resources',cl:'Cache limit/MB',cs:'Stats',ch:'Hit rate(1h)',
-  pt:'Clipboard',pd:'System monitor, history reuse',pe:'Enable',peh:'Auto-record clipboard',pm:'Max records',pr:'Retention',ps:'Ignore short',psh:'Skip <2 chars',
-  ptest:'Open Test Panel',ptesth:'Open feature C test sidebar',
-  dt:'Data',dd:'Export or import',de:'Export',deb:'Export',ded:'Package as .pake-data.zip',di:'Import',dib:'Import',did:'Read from Downloads',
-  ot:'About',od:'System diagnostics',oa:'App Info',os:'System Info',oc:'Copy Report',copy:'Copy',
-  sv:'Save',cc:'Cancel',ts:'Saved',tl2:'Load failed',tr:'Defaults restored',tf:'Save failed',
-  tex:'Exporting...',teok:'Export complete',tef:'Export failed',tim:'Importing...',tiok:'Import complete',tif:'Import failed',
-  tc:'Copied',tcf:'Copy failed',v:'Version',gi:'Git',bt:'Built',ru:'rustc',tg:'Target',fe:'Features',o:'OS',cpu:'CPU',mem:'Memory',dk:'Disk free',pid:'PID'}};
-function t(k){return(L[lang]||L.zh)[k]||k}
+        // i18n
+        var lang = "zh";
+        var L = {
+          zh: {
+            general: "一般",
+            adblock: "广告拦截",
+            cache: "离线缓存",
+            clipboard: "剪贴板",
+            data: "数据管理",
+            about: "关于",
+            gt: "一般设置",
+            gd: "应用外观与行为",
+            tl: "暗色主题",
+            th: "切换面板配色",
+            ll: "界面语言",
+            rl: "恢复默认",
+            rh: "重置为出厂值",
+            rb: "恢复默认",
+            at: "广告拦截",
+            ad: "基于 EasyList 规则引擎",
+            ae: "启用拦截",
+            ah: "自动过滤广告与跟踪",
+            ar: "自定义规则",
+            arh: "每行一条，||匹配域名 ##隐藏元素",
+            arb: "高级",
+            ct: "离线缓存",
+            cd: "HTTP 代理缓存，断网也能浏览",
+            ce: "启用缓存",
+            ceh: "自动缓存浏览资源",
+            cl: "缓存上限/MB",
+            cs: "统计",
+            ch: "命中率(近1小时)",
+            pt: "剪贴板管理",
+            pd: "系统级监听，历史记录一键复用",
+            pe: "启用监听",
+            peh: "自动记录剪贴板变化",
+            pm: "最大记录数",
+            pr: "保留天数",
+            ps: "忽略短文本",
+            psh: "少于2字符不记录",
+            ptest: "打开测试面板",
+            ptesth: "展开功能C的测试面板（右侧边栏）",
+            dt: "数据管理",
+            dd: "一键导出或导入数据",
+            de: "导出数据",
+            deb: "导出",
+            ded: "打包为 .pake-data.zip",
+            di: "导入数据",
+            dib: "导入",
+            did: "从下载目录读取恢复",
+            ot: "关于",
+            od: "系统诊断",
+            oa: "应用信息",
+            os: "系统信息",
+            oc: "复制诊断报告",
+            copy: "复制",
+            sv: "保存",
+            cc: "取消",
+            ts: "已保存",
+            tl2: "加载失败",
+            tr: "已恢复默认",
+            tf: "保存失败",
+            tex: "导出中...",
+            teok: "导出完成",
+            tef: "导出失败",
+            tim: "导入中...",
+            tiok: "导入完成",
+            tif: "导入失败",
+            tc: "已复制",
+            tcf: "复制失败",
+            v: "版本",
+            gi: "Git",
+            bt: "编译时间",
+            ru: "rustc",
+            tg: "Target",
+            fe: "启用功能",
+            o: "OS",
+            cpu: "CPU",
+            mem: "内存",
+            dk: "磁盘可用",
+            pid: "PID",
+          },
+          en: {
+            general: "General",
+            adblock: "Adblock",
+            cache: "Cache",
+            clipboard: "Clipboard",
+            data: "Data",
+            about: "About",
+            gt: "General",
+            gd: "Appearance & behavior",
+            tl: "Dark theme",
+            th: "Toggle colors",
+            ll: "Language",
+            rl: "Reset",
+            rh: "Factory reset",
+            rb: "Reset",
+            at: "Adblock",
+            ad: "EasyList engine",
+            ae: "Enable",
+            ah: "Filter ads & tracking",
+            ar: "Custom rules",
+            arh: "One per line, ||domain ##.selector",
+            arb: "Advanced",
+            ct: "Cache",
+            cd: "HTTP proxy, offline browsing",
+            ce: "Enable",
+            ceh: "Auto-cache resources",
+            cl: "Cache limit/MB",
+            cs: "Stats",
+            ch: "Hit rate(1h)",
+            pt: "Clipboard",
+            pd: "System monitor, history reuse",
+            pe: "Enable",
+            peh: "Auto-record clipboard",
+            pm: "Max records",
+            pr: "Retention",
+            ps: "Ignore short",
+            psh: "Skip <2 chars",
+            ptest: "Open Test Panel",
+            ptesth: "Open feature C test sidebar",
+            dt: "Data",
+            dd: "Export or import",
+            de: "Export",
+            deb: "Export",
+            ded: "Package as .pake-data.zip",
+            di: "Import",
+            dib: "Import",
+            did: "Read from Downloads",
+            ot: "About",
+            od: "System diagnostics",
+            oa: "App Info",
+            os: "System Info",
+            oc: "Copy Report",
+            copy: "Copy",
+            sv: "Save",
+            cc: "Cancel",
+            ts: "Saved",
+            tl2: "Load failed",
+            tr: "Defaults restored",
+            tf: "Save failed",
+            tex: "Exporting...",
+            teok: "Export complete",
+            tef: "Export failed",
+            tim: "Importing...",
+            tiok: "Import complete",
+            tif: "Import failed",
+            tc: "Copied",
+            tcf: "Copy failed",
+            v: "Version",
+            gi: "Git",
+            bt: "Built",
+            ru: "rustc",
+            tg: "Target",
+            fe: "Features",
+            o: "OS",
+            cpu: "CPU",
+            mem: "Memory",
+            dk: "Disk free",
+            pid: "PID",
+          },
+        };
+        function t(k) {
+          return (L[lang] || L.zh)[k] || k;
+        }
 
-function toast(msg){var e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(function(){e.classList.remove('show')},2000)}
+        function toast(msg) {
+          var e = document.getElementById("toast");
+          e.textContent = msg;
+          e.classList.add("show");
+          clearTimeout(e._t);
+          e._t = setTimeout(function () {
+            e.classList.remove("show");
+          }, 2000);
+        }
 
-// Nav
-var tabs=[
-  ['general','⚙',t('general')],
-  ['adblock','🛡',t('adblock')],
-  ['cache','💾',t('cache')],
-  ['clipboard','📋',t('clipboard')],
-  ['data','📦',t('data')],
-  ['about','ℹ',t('about')]
-];
-var nav=document.getElementById('nav');
-tabs.forEach(function(entry){
-  var b=document.createElement('button');
-  b.className='nav-item'+(entry[0]===T?' active':'');
-  b.innerHTML='<span>'+entry[1]+'</span><span>'+entry[2]+'</span>';
-  b.onclick=function(){T=entry[0];render()};
-  nav.appendChild(b);
-});
+        // Nav
+        var tabs = [
+          ["general", "⚙", t("general")],
+          ["adblock", "🛡", t("adblock")],
+          ["cache", "💾", t("cache")],
+          ["clipboard", "📋", t("clipboard")],
+          ["data", "📦", t("data")],
+          ["about", "ℹ", t("about")],
+        ];
+        var nav = document.getElementById("nav");
+        tabs.forEach(function (entry) {
+          var b = document.createElement("button");
+          b.className = "nav-item" + (entry[0] === T ? " active" : "");
+          b.innerHTML =
+            "<span>" + entry[1] + "</span><span>" + entry[2] + "</span>";
+          b.onclick = function () {
+            T = entry[0];
+            render();
+          };
+          nav.appendChild(b);
+        });
 
-function render(){
-  document.querySelectorAll('.nav-item').forEach(function(el,i){el.classList.toggle('active',tabs[i][0]===T)});
-  var c=document.getElementById('content');c.innerHTML='';
-  if(T==='general') renderGeneral(c);
-  else if(T==='adblock') renderAdblock(c);
-  else if(T==='cache') renderCache(c);
-  else if(T==='clipboard') renderClipboard(c);
-  else if(T==='data') renderData(c);
-  else if(T==='about') renderAbout(c);
-  if(settings) fillForm();
-}
+        function render() {
+          document.querySelectorAll(".nav-item").forEach(function (el, i) {
+            el.classList.toggle("active", tabs[i][0] === T);
+          });
+          var c = document.getElementById("content");
+          c.innerHTML = "";
+          if (T === "general") renderGeneral(c);
+          else if (T === "adblock") renderAdblock(c);
+          else if (T === "cache") renderCache(c);
+          else if (T === "clipboard") renderClipboard(c);
+          else if (T === "data") renderData(c);
+          else if (T === "about") renderAbout(c);
+          if (settings) fillForm();
+        }
 
-function card(title,desc){
-  var c=document.createElement('div');c.className='card';
-  if(title){var h=document.createElement('div');h.className='card-title';h.textContent=title;c.appendChild(h)}
-  if(desc){var d=document.createElement('div');d.className='card-desc';d.textContent=desc;c.appendChild(d)}
-  return c
-}
-function row(label,hint,widget){var r=document.createElement('div');r.className='row';
-  var l=document.createElement('div');
-  var lt=document.createElement('div');lt.className='row-label';lt.textContent=label;l.appendChild(lt);
-  if(hint){var lh=document.createElement('div');lh.className='row-hint';lh.textContent=hint;l.appendChild(lh)}
-  r.appendChild(l);if(widget)r.appendChild(widget);return r}
-function tgBtn(id){var b=document.createElement('button');b.className='toggle';if(id)b.id=id;b.onclick=function(){b.classList.toggle('on');dirty=true};return b}
+        function card(title, desc) {
+          var c = document.createElement("div");
+          c.className = "card";
+          if (title) {
+            var h = document.createElement("div");
+            h.className = "card-title";
+            h.textContent = title;
+            c.appendChild(h);
+          }
+          if (desc) {
+            var d = document.createElement("div");
+            d.className = "card-desc";
+            d.textContent = desc;
+            c.appendChild(d);
+          }
+          return c;
+        }
+        function row(label, hint, widget) {
+          var r = document.createElement("div");
+          r.className = "row";
+          var l = document.createElement("div");
+          var lt = document.createElement("div");
+          lt.className = "row-label";
+          lt.textContent = label;
+          l.appendChild(lt);
+          if (hint) {
+            var lh = document.createElement("div");
+            lh.className = "row-hint";
+            lh.textContent = hint;
+            l.appendChild(lh);
+          }
+          r.appendChild(l);
+          if (widget) r.appendChild(widget);
+          return r;
+        }
+        function tgBtn(id) {
+          var b = document.createElement("button");
+          b.className = "toggle";
+          if (id) b.id = id;
+          b.onclick = function () {
+            b.classList.toggle("on");
+            dirty = true;
+          };
+          return b;
+        }
 
-function renderGeneral(c){
-  var ca=card(t('gt'),t('gd'));
-  ca.appendChild(row(t('tl'),t('th'),tgBtn('__ps_theme__')));
-  ca.appendChild(row(t('rl'),t('rh'),function(){var b=document.createElement('button');b.className='btn btn-outline';b.textContent=t('rb');b.onclick=doReset;return b}()));
-  c.appendChild(ca);
-}
-function renderAdblock(c){
-  var ca=card(t('at'),t('ad'));
-  ca.appendChild(row(t('ae'),t('ah'),tgBtn('__ps_ab__')));
-  ca.appendChild(function(){var r=document.createElement('div');r.className='row';
-    var l=document.createElement('div');l.innerHTML='<div class="row-label">'+t('ar')+'</div><div class="row-hint">'+t('arh')+'</div>';
-    r.appendChild(l);return r}());
-  var ta=document.createElement('textarea');ta.id='__ps_arules__';ta.placeholder='||example.com^&#10;example.com##.ad-banner';
-  ta.onchange=function(){dirty=true};
-  ca.appendChild(ta);
-  c.appendChild(ca);
-}
-function renderCache(c){
-  var ca=card(t('ct'),t('cd'));
-  ca.appendChild(row(t('ce'),t('ceh'),tgBtn('__ps_ca__')));
-  var s=document.createElement('select');s.id='__ps_csize__';s.innerHTML='<option value="50">50 MB</option><option value="100">100 MB</option><option value="200">200 MB</option><option value="500">500 MB</option><option value="1000">1000 MB</option>';
-  s.onchange=function(){dirty=true};
-  ca.appendChild(row(t('cl'),null,s));
-  c.appendChild(ca);
-}
-function renderClipboard(c){
-  var ca=card(t('pt'),t('pd'));
-  ca.appendChild(row(t('pe'),t('peh'),tgBtn('__ps_clip__')));
-  var s1=document.createElement('select');s1.id='__ps_cmax__';
-  s1.innerHTML='<option value="500">500</option><option value="1000">1,000</option><option value="2000">2,000</option><option value="5000">5,000</option>';
-  s1.onchange=function(){dirty=true};
-  ca.appendChild(row(t('pm'),null,s1));
-  var s2=document.createElement('select');s2.id='__ps_cret__';
-  s2.innerHTML='<option value="7">7</option><option value="14">14</option><option value="30">30</option><option value="0">∞</option>';
-  s2.onchange=function(){dirty=true};
-  ca.appendChild(row(t('pr'),null,s2));
-  ca.appendChild(row(t('ps'),t('psh'),tgBtn('__ps_cshort__')));
-  c.appendChild(ca);
-  // Open C sidebar button
-  var r=document.createElement('div');r.style.cssText='padding:12px 0';
-  var b=document.createElement('button');b.className='btn-dashed';
-  b.textContent='📋 '+t('ptest');
-  b.title=t('ptesth');
-  b.onclick=function(){
-    I('clipboard_show_panel').catch(function(){});
-    // Also try to find and toggle C sidebar in the main window
-    try{window.__TAURI__&&window.__TAURI__.core&&window.__TAURI__.core.invoke('plugin:global-shortcut|simulate',{shortcut:'Ctrl+Shift+V'})}catch(e){}
-  };
-  r.appendChild(b);c.appendChild(r);
-}
-function renderData(c){
-  var ca=card(t('dt'),t('dd'));
-  var r1=document.createElement('div');r1.className='row';
-  r1.innerHTML='<div><div class="row-label">'+t('de')+'</div><div class="row-hint">'+t('ded')+'</div></div>';
-  var b1=document.createElement('button');b1.className='btn btn-primary';b1.textContent=t('deb');
-  b1.onclick=function(){b1.textContent='...';b1.disabled=true;I('export_data').then(function(p){toast(t('teok')+': '+p)}).catch(function(e){toast(t('tef')+': '+e)}).finally(function(){b1.textContent=t('deb');b1.disabled=false})};
-  r1.appendChild(b1);ca.appendChild(r1);
-  var res1=document.createElement('div');res1.style.cssText='font-size:10px;color:#94a3b8;margin-top:8px';res1.id='__ps_exp_res__';ca.appendChild(res1);
-  c.appendChild(ca);
-  var ca2=card();
-  var r2=document.createElement('div');r2.className='row';
-  r2.innerHTML='<div><div class="row-label">'+t('di')+'</div><div class="row-hint">'+t('did')+'</div></div>';
-  var b2=document.createElement('button');b2.className='btn btn-outline';b2.textContent=t('dib');
-  b2.onclick=function(){b2.textContent='...';b2.disabled=true;I('import_data').then(function(p){toast(t('tiok')+': '+p)}).catch(function(e){toast(t('tif')+': '+e)}).finally(function(){b2.textContent=t('dib');b2.disabled=false})};
-  r2.appendChild(b2);ca2.appendChild(r2);
-  var res2=document.createElement('div');res2.style.cssText='font-size:10px;color:#94a3b8;margin-top:8px';res2.id='__ps_imp_res__';ca2.appendChild(res2);
-  c.appendChild(ca2);
-}
-function renderAbout(c){
-  var ca=card(t('oa'));
-  var da=document.createElement('div');da.style.cssText='font-size:11px';da.id='__ps_dapp__';ca.appendChild(da);
-  c.appendChild(ca);
-  var ca2=card(t('os'));
-  var ds=document.createElement('div');ds.style.cssText='font-size:11px';ds.id='__ps_dsys__';ca2.appendChild(ds);
-  c.appendChild(ca2);
-  var b=document.createElement('button');b.className='btn btn-outline';b.style.cssText='width:100%;padding:10px;margin-top:8px';b.textContent='📋 '+t('oc');
-  b.onclick=function(){b.textContent='...';I('copy_diagnostics_report').then(function(){toast(t('tc'))}).catch(function(e){toast(t('tcf'))}).finally(function(){b.textContent='📋 '+t('oc')})};
-  c.appendChild(b);
-  loadDiagnostics();
-}
-function loadDiagnostics(){
-  I('get_diagnostics').then(function(d){
-    var app='<div style="line-height:1.8;font-size:11px">';
-    app+=kv(t('v'),d.app_version||'-');
-    app+=kv(t('gi'),d.git_commit||'-');
-    app+=kv(t('bt'),d.build_time||'-');
-    app+=kv(t('ru'),d.rustc_version||'-');
-    app+=kv(t('tg'),d.target_triple||'-');
-    app+=kv(t('fe'),(d.enabled_features||[]).join(', '));
-    app+=kv(t('pid'),d.pid||'-');
-    app+='</div>';
-    var da=document.getElementById('__ps_dapp__');if(da)da.innerHTML=app;
-    var sys='<div style="line-height:1.8;font-size:11px">';
-    sys+=kv(t('o'),d.os_name+' '+d.os_version);
-    sys+=kv(t('cpu'),d.cpu_cores+' cores');
-    sys+=kv(t('mem'),(d.used_ram_mb||'?')+' / '+(d.total_ram_mb||'?')+' MB');
-    sys+=kv(t('dk'),(d.disk_free_mb||'?')+' MB free');
-    sys+='</div>';
-    var ds=document.getElementById('__ps_dsys__');if(ds)ds.innerHTML=sys;
-  }).catch(function(){});
-}
-function kv(l,v){return'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="color:#94a3b8">'+l+'</span><span style="font-weight:500;color:#334155">'+v+'</span></div>'}
+        function renderGeneral(c) {
+          var ca = card(t("gt"), t("gd"));
+          ca.appendChild(row(t("tl"), t("th"), tgBtn("__ps_theme__")));
+          ca.appendChild(
+            row(
+              t("rl"),
+              t("rh"),
+              (function () {
+                var b = document.createElement("button");
+                b.className = "btn btn-outline";
+                b.textContent = t("rb");
+                b.onclick = doReset;
+                return b;
+              })(),
+            ),
+          );
+          c.appendChild(ca);
+        }
+        function renderAdblock(c) {
+          var ca = card(t("at"), t("ad"));
+          ca.appendChild(row(t("ae"), t("ah"), tgBtn("__ps_ab__")));
+          ca.appendChild(
+            (function () {
+              var r = document.createElement("div");
+              r.className = "row";
+              var l = document.createElement("div");
+              l.innerHTML =
+                '<div class="row-label">' +
+                t("ar") +
+                '</div><div class="row-hint">' +
+                t("arh") +
+                "</div>";
+              r.appendChild(l);
+              return r;
+            })(),
+          );
+          var ta = document.createElement("textarea");
+          ta.id = "__ps_arules__";
+          ta.placeholder = "||example.com^&#10;example.com##.ad-banner";
+          ta.onchange = function () {
+            dirty = true;
+          };
+          ca.appendChild(ta);
+          c.appendChild(ca);
+        }
+        function renderCache(c) {
+          var ca = card(t("ct"), t("cd"));
+          ca.appendChild(row(t("ce"), t("ceh"), tgBtn("__ps_ca__")));
+          var s = document.createElement("select");
+          s.id = "__ps_csize__";
+          s.innerHTML =
+            '<option value="50">50 MB</option><option value="100">100 MB</option><option value="200">200 MB</option><option value="500">500 MB</option><option value="1000">1000 MB</option>';
+          s.onchange = function () {
+            dirty = true;
+          };
+          ca.appendChild(row(t("cl"), null, s));
+          c.appendChild(ca);
+        }
+        function renderClipboard(c) {
+          var ca = card(t("pt"), t("pd"));
+          ca.appendChild(row(t("pe"), t("peh"), tgBtn("__ps_clip__")));
+          var s1 = document.createElement("select");
+          s1.id = "__ps_cmax__";
+          s1.innerHTML =
+            '<option value="500">500</option><option value="1000">1,000</option><option value="2000">2,000</option><option value="5000">5,000</option>';
+          s1.onchange = function () {
+            dirty = true;
+          };
+          ca.appendChild(row(t("pm"), null, s1));
+          var s2 = document.createElement("select");
+          s2.id = "__ps_cret__";
+          s2.innerHTML =
+            '<option value="7">7</option><option value="14">14</option><option value="30">30</option><option value="0">∞</option>';
+          s2.onchange = function () {
+            dirty = true;
+          };
+          ca.appendChild(row(t("pr"), null, s2));
+          ca.appendChild(row(t("ps"), t("psh"), tgBtn("__ps_cshort__")));
+          c.appendChild(ca);
+          // Open C sidebar button
+          var r = document.createElement("div");
+          r.style.cssText = "padding:12px 0";
+          var b = document.createElement("button");
+          b.className = "btn-dashed";
+          b.textContent = "📋 " + t("ptest");
+          b.title = t("ptesth");
+          b.onclick = function () {
+            I("clipboard_show_panel").catch(function () {});
+            // Also try to find and toggle C sidebar in the main window
+            try {
+              window.__TAURI__ &&
+                window.__TAURI__.core &&
+                window.__TAURI__.core.invoke(
+                  "plugin:global-shortcut|simulate",
+                  { shortcut: "Ctrl+Shift+V" },
+                );
+            } catch (e) {}
+          };
+          r.appendChild(b);
+          c.appendChild(r);
+        }
+        function renderData(c) {
+          var ca = card(t("dt"), t("dd"));
+          var r1 = document.createElement("div");
+          r1.className = "row";
+          r1.innerHTML =
+            '<div><div class="row-label">' +
+            t("de") +
+            '</div><div class="row-hint">' +
+            t("ded") +
+            "</div></div>";
+          var b1 = document.createElement("button");
+          b1.className = "btn btn-primary";
+          b1.textContent = t("deb");
+          b1.onclick = function () {
+            b1.textContent = "...";
+            b1.disabled = true;
+            I("export_data")
+              .then(function (p) {
+                toast(t("teok") + ": " + p);
+              })
+              .catch(function (e) {
+                toast(t("tef") + ": " + e);
+              })
+              .finally(function () {
+                b1.textContent = t("deb");
+                b1.disabled = false;
+              });
+          };
+          r1.appendChild(b1);
+          ca.appendChild(r1);
+          var res1 = document.createElement("div");
+          res1.style.cssText = "font-size:10px;color:#94a3b8;margin-top:8px";
+          res1.id = "__ps_exp_res__";
+          ca.appendChild(res1);
+          c.appendChild(ca);
+          var ca2 = card();
+          var r2 = document.createElement("div");
+          r2.className = "row";
+          r2.innerHTML =
+            '<div><div class="row-label">' +
+            t("di") +
+            '</div><div class="row-hint">' +
+            t("did") +
+            "</div></div>";
+          var b2 = document.createElement("button");
+          b2.className = "btn btn-outline";
+          b2.textContent = t("dib");
+          b2.onclick = function () {
+            b2.textContent = "...";
+            b2.disabled = true;
+            I("import_data")
+              .then(function (p) {
+                toast(t("tiok") + ": " + p);
+              })
+              .catch(function (e) {
+                toast(t("tif") + ": " + e);
+              })
+              .finally(function () {
+                b2.textContent = t("dib");
+                b2.disabled = false;
+              });
+          };
+          r2.appendChild(b2);
+          ca2.appendChild(r2);
+          var res2 = document.createElement("div");
+          res2.style.cssText = "font-size:10px;color:#94a3b8;margin-top:8px";
+          res2.id = "__ps_imp_res__";
+          ca2.appendChild(res2);
+          c.appendChild(ca2);
+        }
+        function renderAbout(c) {
+          var ca = card(t("oa"));
+          var da = document.createElement("div");
+          da.style.cssText = "font-size:11px";
+          da.id = "__ps_dapp__";
+          ca.appendChild(da);
+          c.appendChild(ca);
+          var ca2 = card(t("os"));
+          var ds = document.createElement("div");
+          ds.style.cssText = "font-size:11px";
+          ds.id = "__ps_dsys__";
+          ca2.appendChild(ds);
+          c.appendChild(ca2);
+          var b = document.createElement("button");
+          b.className = "btn btn-outline";
+          b.style.cssText = "width:100%;padding:10px;margin-top:8px";
+          b.textContent = "📋 " + t("oc");
+          b.onclick = function () {
+            b.textContent = "...";
+            I("copy_diagnostics_report")
+              .then(function () {
+                toast(t("tc"));
+              })
+              .catch(function (e) {
+                toast(t("tcf"));
+              })
+              .finally(function () {
+                b.textContent = "📋 " + t("oc");
+              });
+          };
+          c.appendChild(b);
+          loadDiagnostics();
+        }
+        function loadDiagnostics() {
+          I("get_diagnostics")
+            .then(function (d) {
+              var app = '<div style="line-height:1.8;font-size:11px">';
+              app += kv(t("v"), d.app_version || "-");
+              app += kv(t("gi"), d.git_commit || "-");
+              app += kv(t("bt"), d.build_time || "-");
+              app += kv(t("ru"), d.rustc_version || "-");
+              app += kv(t("tg"), d.target_triple || "-");
+              app += kv(t("fe"), (d.enabled_features || []).join(", "));
+              app += kv(t("pid"), d.pid || "-");
+              app += "</div>";
+              var da = document.getElementById("__ps_dapp__");
+              if (da) da.innerHTML = app;
+              var sys = '<div style="line-height:1.8;font-size:11px">';
+              sys += kv(t("o"), d.os_name + " " + d.os_version);
+              sys += kv(t("cpu"), d.cpu_cores + " cores");
+              sys += kv(
+                t("mem"),
+                (d.used_ram_mb || "?") +
+                  " / " +
+                  (d.total_ram_mb || "?") +
+                  " MB",
+              );
+              sys += kv(t("dk"), (d.disk_free_mb || "?") + " MB free");
+              sys += "</div>";
+              var ds = document.getElementById("__ps_dsys__");
+              if (ds) ds.innerHTML = sys;
+            })
+            .catch(function () {});
+        }
+        function kv(l, v) {
+          return (
+            '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="color:#94a3b8">' +
+            l +
+            '</span><span style="font-weight:500;color:#334155">' +
+            v +
+            "</span></div>"
+          );
+        }
 
-function fillForm(){
-  if(!settings)return;
-  var s=settings;
-  if(document.getElementById('__ps_theme__')){document.getElementById('__ps_theme__').classList.toggle('on',(s.general||{}).theme==='dark')}
-  if(document.getElementById('__ps_ab__')){document.getElementById('__ps_ab__').classList.toggle('on',!!(s.adblock||{}).enabled)}
-  if(document.getElementById('__ps_arules__')){document.getElementById('__ps_arules__').value=((s.adblock||{}).custom_rules||[]).join('\n')}
-  if(document.getElementById('__ps_ca__')){document.getElementById('__ps_ca__').classList.toggle('on',!!(s.cache||{}).enabled)}
-  if(document.getElementById('__ps_csize__')){document.getElementById('__ps_csize__').value=(s.cache||{}).max_size_mb||200}
-  if(document.getElementById('__ps_clip__')){document.getElementById('__ps_clip__').classList.toggle('on',!!(s.clipboard||{}).enabled)}
-  if(document.getElementById('__ps_cmax__')){document.getElementById('__ps_cmax__').value=(s.clipboard||{}).max_records||2000}
-  if(document.getElementById('__ps_cret__')){document.getElementById('__ps_cret__').value=(s.clipboard||{}).retention_days||30}
-  if(document.getElementById('__ps_cshort__')){document.getElementById('__ps_cshort__').classList.toggle('on',!!(s.clipboard||{}).ignore_short)}
-  dirty=false;
-}
+        function fillForm() {
+          if (!settings) return;
+          var s = settings;
+          if (document.getElementById("__ps_theme__")) {
+            document
+              .getElementById("__ps_theme__")
+              .classList.toggle("on", (s.general || {}).theme === "dark");
+          }
+          if (document.getElementById("__ps_ab__")) {
+            document
+              .getElementById("__ps_ab__")
+              .classList.toggle("on", !!(s.adblock || {}).enabled);
+          }
+          if (document.getElementById("__ps_arules__")) {
+            document.getElementById("__ps_arules__").value = (
+              (s.adblock || {}).custom_rules || []
+            ).join("\n");
+          }
+          if (document.getElementById("__ps_ca__")) {
+            document
+              .getElementById("__ps_ca__")
+              .classList.toggle("on", !!(s.cache || {}).enabled);
+          }
+          if (document.getElementById("__ps_csize__")) {
+            document.getElementById("__ps_csize__").value =
+              (s.cache || {}).max_size_mb || 200;
+          }
+          if (document.getElementById("__ps_clip__")) {
+            document
+              .getElementById("__ps_clip__")
+              .classList.toggle("on", !!(s.clipboard || {}).enabled);
+          }
+          if (document.getElementById("__ps_cmax__")) {
+            document.getElementById("__ps_cmax__").value =
+              (s.clipboard || {}).max_records || 2000;
+          }
+          if (document.getElementById("__ps_cret__")) {
+            document.getElementById("__ps_cret__").value =
+              (s.clipboard || {}).retention_days || 30;
+          }
+          if (document.getElementById("__ps_cshort__")) {
+            document
+              .getElementById("__ps_cshort__")
+              .classList.toggle("on", !!(s.clipboard || {}).ignore_short);
+          }
+          dirty = false;
+        }
 
-function collect(){
-  var g=settings?JSON.parse(JSON.stringify(settings.general||{})):{};
-  var themeEl=document.getElementById('__ps_theme__');
-  g.theme=themeEl&&themeEl.classList.contains('on')?'dark':'light';
-  var ab=settings?JSON.parse(JSON.stringify(settings.adblock||{})):{};
-  var abEl=document.getElementById('__ps_ab__');
-  ab.enabled=abEl?abEl.classList.contains('on'):true;
-  var arEl=document.getElementById('__ps_arules__');
-  ab.custom_rules=(arEl?arEl.value:'').split('\n').map(function(s){return s.trim()}).filter(function(s){return s});
-  var ca=settings?JSON.parse(JSON.stringify(settings.cache||{})):{};
-  var caEl=document.getElementById('__ps_ca__');
-  ca.enabled=caEl?caEl.classList.contains('on'):true;
-  var csEl=document.getElementById('__ps_csize__');
-  ca.max_size_mb=csEl?parseInt(csEl.value)||200:200;
-  var cl=settings?JSON.parse(JSON.stringify(settings.clipboard||{})):{};
-  var clEl=document.getElementById('__ps_clip__');
-  cl.enabled=clEl?clEl.classList.contains('on'):true;
-  var cmEl=document.getElementById('__ps_cmax__');
-  cl.max_records=cmEl?parseInt(cmEl.value)||2000:2000;
-  var crEl=document.getElementById('__ps_cret__');
-  cl.retention_days=crEl?parseInt(crEl.value)||30:30;
-  var cs2El=document.getElementById('__ps_cshort__');
-  cl.ignore_short=cs2El?cs2El.classList.contains('on'):true;
-  lang=(g.language==='en')?'en':'zh';
-  return{general:g,adblock:ab,cache:ca,clipboard:cl};
-}
+        function collect() {
+          var g = settings
+            ? JSON.parse(JSON.stringify(settings.general || {}))
+            : {};
+          var themeEl = document.getElementById("__ps_theme__");
+          g.theme =
+            themeEl && themeEl.classList.contains("on") ? "dark" : "light";
+          var ab = settings
+            ? JSON.parse(JSON.stringify(settings.adblock || {}))
+            : {};
+          var abEl = document.getElementById("__ps_ab__");
+          ab.enabled = abEl ? abEl.classList.contains("on") : true;
+          var arEl = document.getElementById("__ps_arules__");
+          ab.custom_rules = (arEl ? arEl.value : "")
+            .split("\n")
+            .map(function (s) {
+              return s.trim();
+            })
+            .filter(function (s) {
+              return s;
+            });
+          var ca = settings
+            ? JSON.parse(JSON.stringify(settings.cache || {}))
+            : {};
+          var caEl = document.getElementById("__ps_ca__");
+          ca.enabled = caEl ? caEl.classList.contains("on") : true;
+          var csEl = document.getElementById("__ps_csize__");
+          ca.max_size_mb = csEl ? parseInt(csEl.value) || 200 : 200;
+          var cl = settings
+            ? JSON.parse(JSON.stringify(settings.clipboard || {}))
+            : {};
+          var clEl = document.getElementById("__ps_clip__");
+          cl.enabled = clEl ? clEl.classList.contains("on") : true;
+          var cmEl = document.getElementById("__ps_cmax__");
+          cl.max_records = cmEl ? parseInt(cmEl.value) || 2000 : 2000;
+          var crEl = document.getElementById("__ps_cret__");
+          cl.retention_days = crEl ? parseInt(crEl.value) || 30 : 30;
+          var cs2El = document.getElementById("__ps_cshort__");
+          cl.ignore_short = cs2El ? cs2El.classList.contains("on") : true;
+          lang = g.language === "en" ? "en" : "zh";
+          return { general: g, adblock: ab, cache: ca, clipboard: cl };
+        }
 
-function doSave(){
-  var s=collect();
-  I('save_settings',{settings:s}).then(function(){settings=s;dirty=false;toast(t('ts'))}).catch(function(e){toast(t('tf')+': '+e)});
-}
-function doReset(){
-  I('reset_settings').then(function(){loadSettings();toast(t('tr'))}).catch(function(e){toast(t('tf')+': '+e)});
-}
+        function doSave() {
+          var s = collect();
+          I("save_settings", { settings: s })
+            .then(function () {
+              settings = s;
+              dirty = false;
+              toast(t("ts"));
+            })
+            .catch(function (e) {
+              toast(t("tf") + ": " + e);
+            });
+        }
+        function doReset() {
+          I("reset_settings")
+            .then(function () {
+              loadSettings();
+              toast(t("tr"));
+            })
+            .catch(function (e) {
+              toast(t("tf") + ": " + e);
+            });
+        }
 
-function loadSettings(){
-  I('get_settings').then(function(s){settings=s;lang=((s.general||{}).language==='en')?'en':'zh';render();fillForm()}).catch(function(){toast(t('tl2'))});
-}
+        function loadSettings() {
+          I("get_settings")
+            .then(function (s) {
+              settings = s;
+              lang = (s.general || {}).language === "en" ? "en" : "zh";
+              render();
+              fillForm();
+            })
+            .catch(function () {
+              toast(t("tl2"));
+            });
+        }
 
-document.getElementById('saveBtn').onclick=doSave;
-document.getElementById('cancelBtn').onclick=function(){if(dirty&&!confirm('Unsaved changes. Close?'))return;window.__TAURI__&&window.__TAURI__.window&&window.__TAURI__.window.close()};
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(dirty&&!confirm('Unsaved changes. Close?'))return;window.__TAURI__&&window.__TAURI__.window&&window.__TAURI__.window.close()}});
+        document.getElementById("saveBtn").onclick = doSave;
+        document.getElementById("cancelBtn").onclick = function () {
+          if (dirty && !confirm("Unsaved changes. Close?")) return;
+          window.__TAURI__ &&
+            window.__TAURI__.window &&
+            window.__TAURI__.window.close();
+        };
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") {
+            if (dirty && !confirm("Unsaved changes. Close?")) return;
+            window.__TAURI__ &&
+              window.__TAURI__.window &&
+              window.__TAURI__.window.close();
+          }
+        });
 
-loadSettings();
-})();
-</script>
-</body>
+        loadSettings();
+      })();
+    </script>
+  </body>
 </html>

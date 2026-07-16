@@ -1,8 +1,6 @@
 use super::store::ClipboardStore;
 use std::sync::Arc;
-use tauri::{
-    AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
-};
+use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 pub const CLIPBOARD_PANEL_LABEL: &str = "clipboard-panel";
 pub const CLIPBOARD_PROTOCOL: &str = "pake-clipboard";

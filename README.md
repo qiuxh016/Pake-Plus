@@ -82,16 +82,16 @@ node dist/cli.js https://example.com --name MyApp \
 
 ## CLI Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--name <string>` | App name | - |
-| `--icon <path>` | App icon | - |
-| `--width <number>` | Window width | 1200 |
-| `--height <number>` | Window height | 780 |
-| `--show-system-tray` | Show system tray | false |
-| `--clipboard` | Enable clipboard management | false |
-| `--clipboard-max <number>` | Max clipboard records (500-5000) | 2000 |
-| `--debug` | Debug build | false |
+| Option                     | Description                      | Default |
+| -------------------------- | -------------------------------- | ------- |
+| `--name <string>`          | App name                         | -       |
+| `--icon <path>`            | App icon                         | -       |
+| `--width <number>`         | Window width                     | 1200    |
+| `--height <number>`        | Window height                    | 780     |
+| `--show-system-tray`       | Show system tray                 | false   |
+| `--clipboard`              | Enable clipboard management      | false   |
+| `--clipboard-max <number>` | Max clipboard records (500-5000) | 2000    |
+| `--debug`                  | Debug build                      | false   |
 
 ## Project Structure
 
@@ -125,11 +125,11 @@ src-tauri/src/
 
 ## Test Results
 
-| Type | Count | Passed | Result |
-|------|-------|--------|--------|
-| Rust tests | 67 | 67 | All passed |
-| JavaScript tests | 297 | 297 | All passed |
-| cargo check | - | - | 0 warnings |
+| Type             | Count | Passed | Result     |
+| ---------------- | ----- | ------ | ---------- |
+| Rust tests       | 67    | 67     | All passed |
+| JavaScript tests | 297   | 297    | All passed |
+| cargo check      | -     | -      | 0 warnings |
 
 ## Credits
 

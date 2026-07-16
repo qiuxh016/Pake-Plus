@@ -28,10 +28,7 @@ const { platform } = process;
 // @ts-ignore
 const platformConfig = platformConfigs[platform];
 
-function mergeResources(
-  base: unknown,
-  platform: unknown,
-): unknown {
+function mergeResources(base: unknown, platform: unknown): unknown {
   if (Array.isArray(base) && Array.isArray(platform)) {
     return [...base, ...platform];
   }

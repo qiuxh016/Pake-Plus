@@ -166,7 +166,10 @@ pub fn run_app() {
     #[cfg(feature = "clipboard")]
     let clipboard_max = pake_config.clipboard_max;
     #[cfg(feature = "clipboard")]
-    eprintln!("[Pake] clipboard_enabled={} clipboard_max={}", clipboard_enabled, clipboard_max);
+    eprintln!(
+        "[Pake] clipboard_enabled={} clipboard_max={}",
+        clipboard_enabled, clipboard_max
+    );
     let _enable_find = pake_config.windows[0].enable_find;
     #[cfg(feature = "clipboard")]
     let package_name = tauri_config
@@ -268,17 +271,15 @@ pub fn run_app() {
     }
 
     // Settings panel protocol — always available regardless of clipboard feature
-    app_builder = app_builder.register_uri_scheme_protocol(
-        "pake-settings",
-        |_context, _request| {
+    app_builder =
+        app_builder.register_uri_scheme_protocol("pake-settings", |_context, _request| {
             tauri::http::Response::builder()
                 .status(200)
                 .header("Content-Type", "text/html; charset=utf-8")
                 .header("Cache-Control", "no-store")
                 .body(include_bytes!("../assets/settings.html").to_vec())
                 .expect("valid settings protocol response")
-        },
-    );
+        });
 
     #[cfg(not(feature = "clipboard"))]
     {
@@ -382,9 +383,10 @@ pub fn run_app() {
             #[cfg(feature = "clipboard")]
             {
                 let handle = app.app_handle().clone();
-                app.app_handle().listen("open-clipboard-panel", move |_event| {
-                    let _ = app::clipboard::panel::toggle_panel(&handle);
-                });
+                app.app_handle()
+                    .listen("open-clipboard-panel", move |_event| {
+                        let _ = app::clipboard::panel::toggle_panel(&handle);
+                    });
             }
 
             // Show window after state restoration to prevent position flashing

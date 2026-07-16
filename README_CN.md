@@ -82,16 +82,16 @@ node dist/cli.js https://example.com --name MyApp \
 
 ## CLI 选项
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--name <string>` | 应用名称 | - |
-| `--icon <path>` | 应用图标 | - |
-| `--width <number>` | 窗口宽度 | 1200 |
-| `--height <number>` | 窗口高度 | 780 |
-| `--show-system-tray` | 显示系统托盘 | false |
-| `--clipboard` | 启用剪贴板管理 | false |
-| `--clipboard-max <number>` | 剪贴板最大记录数 (500-5000) | 2000 |
-| `--debug` | 调试构建 | false |
+| 选项                       | 说明                        | 默认值 |
+| -------------------------- | --------------------------- | ------ |
+| `--name <string>`          | 应用名称                    | -      |
+| `--icon <path>`            | 应用图标                    | -      |
+| `--width <number>`         | 窗口宽度                    | 1200   |
+| `--height <number>`        | 窗口高度                    | 780    |
+| `--show-system-tray`       | 显示系统托盘                | false  |
+| `--clipboard`              | 启用剪贴板管理              | false  |
+| `--clipboard-max <number>` | 剪贴板最大记录数 (500-5000) | 2000   |
+| `--debug`                  | 调试构建                    | false  |
 
 ## 项目结构
 
@@ -125,11 +125,11 @@ src-tauri/src/
 
 ## 测试结果
 
-| 测试类型 | 数量 | 通过 | 结果 |
-|----------|------|------|------|
-| Rust 后端测试 | 67 | 67 | 全部通过 |
-| JavaScript 测试 | 297 | 297 | 全部通过 |
-| cargo check | - | - | 0 warnings |
+| 测试类型        | 数量 | 通过 | 结果       |
+| --------------- | ---- | ---- | ---------- |
+| Rust 后端测试   | 67   | 67   | 全部通过   |
+| JavaScript 测试 | 297  | 297  | 全部通过   |
+| cargo check     | -    | -    | 0 warnings |
 
 ## 开源说明
 
