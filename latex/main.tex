@@ -178,7 +178,7 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
   \item \textbf{前端}：TypeScript（CLI）+ JavaScript（WebView 注入）
   \item \textbf{桌面壳}：系统 WebView（Windows: WebView2，macOS: WKWebView，Linux: WebKitGTK）
   \item \textbf{IPC}：Tauri Command（Rust ↔ JavaScript 双向调用）
-  \item \textbf{关键 Crates}：zip 2.2、sysinfo 0.33、arboard 3.4、chrono 0.4、built 0.7、serde / serde\_json
+  \item \textbf{关键 Crates}：zip 2.2、sysinfo 0.33、arboard 3.4、chrono 0.4、built 0.7、clipboard-rs 0.3、rusqlite 0.32、sha2 0.10、regex 1、serde / serde\_json
 \end{itemize}
 
 \subsection{整体架构图}
@@ -209,6 +209,16 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
 \begin{lstlisting}[caption=Pake Plus 代码结构]
 src-tauri/src/
 ├── app/
+│   ├── clipboard/          # [C] 剪贴板管理模块
+│   │   ├── mod.rs          # 模块入口
+│   │   ├── monitor.rs      # 系统剪贴板监听（FFI）
+│   │   ├── store.rs        # SQLite 存储与检索
+│   │   ├── filter.rs       # 隐私过滤（密码/银行卡/Luhn）
+│   │   ├── panel.rs        # 剪贴板历史面板窗口
+│   │   ├── commands.rs     # IPC 命令
+│   │   ├── settings.rs     # 剪贴板专用设置
+│   │   ├── cleanup.rs      # 自动清理
+│   │   └── source.rs       # 来源应用识别
 │   ├── settings/          # [D] 设置面板模块
 │   │   ├── mod.rs         # 模块入口 + 重导出
 │   │   ├── types.rs       # 数据结构 + Theme/Language 枚举
@@ -222,7 +232,8 @@ src-tauri/src/
 │   ├── window.rs          # 窗口创建 + JS 注入
 │   └── ...
 ├── inject/
-│   ├── custom.js          # [D] 欢迎页 + 设置面板覆盖层
+│   ├── custom.js          # [D] 设置面板侧边栏（齿轮按钮触发）
+│   ├── settings.js        # [C] 剪贴板测试面板
 │   ├── event.js           # 剪贴板快捷键 + 事件处理
 │   └── ...
 └── lib.rs                 # 应用入口 + 命令注册
@@ -239,7 +250,10 @@ src-tauri/src/
 \midrule
 \textbf{Rust 枚举类型安全} & Theme/Language 从 String 重构为 enum，非法值编译期拒绝，\texttt{\#[serde(alias)]} 向后兼容旧格式 & D \\
 \textbf{ModuleSettings trait 多态} & 每个模块独立实现 \texttt{validate() / summary() / stats()}，IPC 统一调用 & D \\
-\textbf{系统级 FFI 剪贴板监听} & Windows \texttt{AddClipboardFormatListener}，macOS \texttt{NSPasteboard}，跨平台条件编译 & C \\
+\textbf{跨平台剪贴板监听} & Windows、macOS 与 X11 使用 \texttt{clipboard\_rs} 原生事件监听，纯 Wayland 使用 \texttt{wl\_clipboard\_rs} 低频轮询兜底，独立线程不阻塞主界面 & C \\
+\textbf{双重哈希去重与回写抑制} & 基于 SHA-256 的 \texttt{last\_hash} 与 \texttt{expected\_hash} 双重判断，过滤系统重复通知，并避免从历史面板复制时再次入库 & C \\
+\textbf{隐私过滤与来源识别} & 识别 Windows、macOS、X11 来源应用，支持忽略应用、疑似密码检测和银行卡号 Luhn 校验，敏感内容在入库前即被拦截 & C \\
+\textbf{SQLite 历史检索与自动清理} & SQLite WAL 持久化、唯一哈希索引与 UPSERT 去重，支持多关键词 AND 模糊搜索，并按保留天数和容量上限定时清理 & C \\
 \textbf{HTTP 层透明代理缓存} & 基于 Tauri 资源拦截，异步磁盘 I/O，LRU 淘汰算法 & B \\
 \textbf{EasyList 规则引擎} & 网络请求拦截 + DOM 元素隐藏双重过滤，支持自定义规则 & A \\
 \textbf{设置版本备份与自动恢复} & 保存前轮转 5 个历史版本，启动时健康检查自动从备份修复损坏文件 & D \\
@@ -423,13 +437,15 @@ src-tauri/src/
     \path{pake-clipboard-cleanup} 的后台线程，通过 \path{recv_timeout} 每小时执行一次清理，
     即使长时间没有新的复制操作，过期记录也能被移除；停止信号到达后线程立即退出。
 
-  \item \textbf{通过全局快捷键打开历史面板。}
+  \item \textbf{通过全局快捷键或设置面板打开历史面板。}
     功能启用后，\path{set_global_shortcut} 在 Windows/Linux 注册 Ctrl+Shift+V，在 macOS 注册
     Cmd+Shift+V。若它与应用唤醒快捷键相同，则剪贴板历史优先；回调还通过
-    \path{Instant} 设置 300 ms 防抖。触发后 \path{toggle_panel} 创建或复用
-    \path{clipboard-panel} Webview：初始大小为 $320\times480$，最小为 $320\times360$，
-    窗口无边框、置顶、可缩放且不显示在任务栏，并根据当前显示器尺寸定位到右下角。
-    面板已存在时只刷新内容并获取焦点，重复按快捷键不会误将其关闭。
+    \path{Instant} 设置 300 ms 防抖。此外，设置面板的剪贴板标签页提供蓝色“打开剪贴板历史”按钮，
+    点击后通过 Tauri 事件系统（\texttt{emit} → \texttt{listen}）通知 Rust 后端打开面板。
+    触发后 \path{toggle_panel} 创建或复用
+    \path{clipboard-panel} Webview：初始大小为 $420\times520$，最小为 $320\times360$，
+    窗口带标题栏、居中显示、可缩放且显示在任务栏中。
+    关闭按钮隐藏窗口而非销毁，面板已存在时只刷新内容并获取焦点。
 
   \item \textbf{加载列表并完成多关键词搜索。}
     面板显示后调用 \path{clipboard_list} 加载最近记录，同时读取
@@ -635,7 +651,8 @@ for index in 0..keywords.len() {
 
   \item \textbf{全局快捷键可能重复触发或与应用唤醒快捷键冲突}
     \\→ 解决：注册时检测冲突并让剪贴板快捷键优先；事件处理增加 300 ms 防抖。
-    面板采用独立、置顶、无边框且可缩放的 Webview，重复按快捷键只聚焦窗口，不误关闭面板。
+    面板采用居中、带标题栏的独立 Webview 窗口，标题栏 × 关闭按钮隐藏窗口而非销毁，
+    重复按快捷键或点击设置面板按钮可重新打开。
 \end{enumerate}
 
 % ---------- 4.4 D ----------
@@ -662,8 +679,10 @@ for index in 0..keywords.len() {
 \textbf{设置面板生命周期}：
 
 \begin{enumerate}[label=(\arabic*)]
-  \item 用户通过三种入口之一打开面板（右下角浮动按钮 / 托盘右键 Settings / Ctrl+Shift+,）
-  \item Rust 侧调用 \texttt{window.eval("window.\_\_pakeOpenSettings()")} 触发 JS 构建面板
+  \item 用户通过三种入口之一打开面板（右下角 ⚙ 齿轮按钮 / 托盘右键 Settings / Ctrl+Shift+,）
+  \item 齿轮按钮由注入的 \texttt{custom.js} 创建，点击时直接调用 \texttt{window.\_\_pakeOpenSettings()} 构建面板
+  \item 托盘菜单和快捷键通过 Rust 侧的 \texttt{open\_settings\_panel} 函数触发，该函数向主窗口
+    eval JavaScript 调用，同时 Tauri 事件系统用于与前端通信
   \item JS 调用 \texttt{get\_settings} IPC 命令加载当前配置
   \item 用户修改表单 → JS 调用 \texttt{validate\_settings} 校验 → 通过后调用 \texttt{save\_settings} 写入磁盘
   \item 写入时自动轮转备份（保留最近 5 个版本）
