@@ -92,8 +92,7 @@ pub fn restore_backup(app: &AppHandle, version: u32) -> Result<String, String> {
     if !bak.exists() {
         return Err(format!("backup v{} not found", version));
     }
-    let bak_data =
-        fs::read_to_string(&bak).map_err(|e| format!("failed to read backup: {}", e))?;
+    let bak_data = fs::read_to_string(&bak).map_err(|e| format!("failed to read backup: {}", e))?;
     let settings: AppSettings =
         serde_json::from_str(&bak_data).map_err(|_| "backup file corrupted".to_string())?;
     write_settings(app, &settings)?;

@@ -1,3 +1,5 @@
+#[cfg(feature = "clipboard")]
+pub mod clipboard;
 pub mod config;
 pub mod invoke;
 #[cfg(target_os = "macos")]

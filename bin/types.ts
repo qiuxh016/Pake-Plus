@@ -147,6 +147,12 @@ export interface PakeCliOptions {
 
   // Request microphone entitlement on macOS, default false
   microphone: boolean;
+
+  // Enable system clipboard history management, default false
+  clipboard: boolean;
+
+  // Maximum clipboard history items, default 2000
+  clipboardMax: number;
 }
 
 export interface PakeAppOptions extends PakeCliOptions {
@@ -197,6 +203,8 @@ export interface PakeConfig {
   proxy_url: string;
   multi_instance: boolean;
   multi_window: boolean;
+  clipboard: boolean;
+  clipboard_max: number;
   inject?: string[];
 }
 

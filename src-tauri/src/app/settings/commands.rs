@@ -126,7 +126,9 @@ pub fn export_data(app: AppHandle) -> Result<String, String> {
             .map_err(|e| format!("failed to write {}: {}", fname, e))?;
     }
 
-    zip_writer.finish().map_err(|e| format!("failed to finalize ZIP: {}", e))?;
+    zip_writer
+        .finish()
+        .map_err(|e| format!("failed to finalize ZIP: {}", e))?;
 
     let kb = total_size / 1024;
     Ok(format!(
@@ -166,10 +168,9 @@ pub fn preview_import(app: AppHandle) -> Result<String, String> {
     zip_files.sort_by(|a, b| b.1.cmp(&a.1));
     let (zip_path, _, zip_name) = &zip_files[0];
 
-    let zip_file =
-        fs::File::open(zip_path).map_err(|e| format!("failed to open ZIP: {}", e))?;
-    let mut archive = zip::ZipArchive::new(zip_file)
-        .map_err(|e| format!("failed to read ZIP archive: {}", e))?;
+    let zip_file = fs::File::open(zip_path).map_err(|e| format!("failed to open ZIP: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(zip_file).map_err(|e| format!("failed to read ZIP archive: {}", e))?;
 
     let mut file_list = Vec::new();
     let mut total_size: u64 = 0;
@@ -229,15 +230,15 @@ pub fn import_data(app: AppHandle) -> Result<String, String> {
     let _ = fs::remove_dir_all(&temp_dir);
     fs::create_dir_all(&temp_dir).map_err(|e| format!("failed to create temp dir: {}", e))?;
 
-    let zip_file =
-        fs::File::open(zip_path).map_err(|e| format!("failed to open ZIP: {}", e))?;
-    let mut archive = zip::ZipArchive::new(zip_file)
-        .map_err(|e| format!("failed to read ZIP archive: {}", e))?;
+    let zip_file = fs::File::open(zip_path).map_err(|e| format!("failed to open ZIP: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(zip_file).map_err(|e| format!("failed to read ZIP archive: {}", e))?;
 
     let mut file_names = Vec::new();
     for i in 0..archive.len() {
-        let mut entry =
-            archive.by_index(i).map_err(|e| format!("failed to read ZIP entry: {}", e))?;
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| format!("failed to read ZIP entry: {}", e))?;
         let name = entry.name().to_string();
         if name.ends_with('/') || name.contains("..") {
             continue;
@@ -266,8 +267,7 @@ pub fn import_data(app: AppHandle) -> Result<String, String> {
                 let bak = data_dir.join(format!("{}.bak", name));
                 let _ = fs::rename(&dest, &bak);
             }
-            fs::copy(&src, &dest)
-                .map_err(|e| format!("failed to restore {}: {}", name, e))?;
+            fs::copy(&src, &dest).map_err(|e| format!("failed to restore {}: {}", name, e))?;
             restored.push(name.clone());
         }
     }
@@ -302,8 +302,8 @@ pub fn get_diagnostics(app: AppHandle) -> Diagnostics {
 #[command]
 pub fn copy_diagnostics_report(app: AppHandle) -> Result<(), String> {
     let report = get_diagnostics_report(&app);
-    let mut clipboard = arboard::Clipboard::new()
-        .map_err(|e| format!("failed to open clipboard: {}", e))?;
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|e| format!("failed to open clipboard: {}", e))?;
     clipboard
         .set_text(&report)
         .map_err(|e| format!("failed to write to clipboard: {}", e))?;

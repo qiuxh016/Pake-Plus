@@ -1,7 +1,7 @@
 use crate::app::config::PakeConfig;
 use crate::util::{
-    check_file_or_append, get_data_dir, get_download_message_with_lang, sanitize_download_filename,
-    show_toast, MessageType,
+    check_file_or_append, get_data_dir, get_download_dir, get_download_message_with_lang,
+    sanitize_download_filename, show_toast, MessageType,
 };
 use std::{
     path::PathBuf,
@@ -300,6 +300,12 @@ fn build_window(
         window_builder = window_builder.initialization_script(include_str!("../inject/find.js"));
     }
 
+    #[cfg(feature = "clipboard")]
+    if config.clipboard && label == "pake" {
+        window_builder =
+            window_builder.initialization_script(include_str!("../inject/settings.js"));
+    }
+
     window_builder = window_builder
         .initialization_script(include_str!("../inject/toast.js"))
         .initialization_script(include_str!("../inject/fullscreen.js"))
@@ -455,7 +461,7 @@ fn build_window(
         let download_handle = app.clone();
         window_builder = window_builder.on_download(move |_webview, event| match event {
             DownloadEvent::Requested { url, destination } => {
-                match download_handle.path().download_dir() {
+                match get_download_dir(&download_handle) {
                     Ok(download_dir) => {
                         let filename = destination
                             .file_name()

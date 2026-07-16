@@ -1,0 +1,20 @@
+[[permission]]
+identifier = "allow-clipboard-panel"
+description = "Allows the local clipboard panel to read and manage clipboard history."
+commands.allow = [
+  "clipboard_list",
+  "clipboard_search",
+  "clipboard_copy_item",
+  "clipboard_delete_item",
+  "clipboard_clear_all",
+  "clipboard_stats",
+  "clipboard_hide_panel",
+]
+
+[[permission]]
+identifier = "allow-clipboard-settings"
+description = "Allows a trusted settings webview to read and update clipboard settings."
+commands.allow = [
+  "clipboard_get_settings",
+  "clipboard_update_settings",
+]

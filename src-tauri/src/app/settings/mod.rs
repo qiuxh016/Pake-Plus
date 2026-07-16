@@ -10,8 +10,8 @@ use tauri::Manager;
 // Re-export commonly used items
 pub use commands::{
     copy_diagnostics_report, export_data, get_diagnostics, get_module_stats, get_settings,
-    import_data, list_backups, preview_import, reset_settings, rollback_settings,
-    save_settings, validate_settings,
+    import_data, list_backups, preview_import, reset_settings, rollback_settings, save_settings,
+    validate_settings,
 };
 pub use diagnostics::get_diagnostics_report;
 pub use health::run_health_check;

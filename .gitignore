@@ -37,6 +37,8 @@ node_modules
 npm-debug.log*
 output
 pnpm-debug.log*
+.cargo-home/
+.rustup-home/
 src-tauri/.cargo/
 src-tauri/.cargo/config.toml
 src-tauri/.pake/

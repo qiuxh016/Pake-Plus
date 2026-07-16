@@ -609,6 +609,26 @@ This can help sites that rely on popup auth windows, but it does not guarantee i
 --new-window
 ```
 
+#### [clipboard]
+
+Enable system-wide text clipboard history. It is disabled by default so existing Pake apps do not start a background clipboard listener or create a history database. History is stored locally in the app configuration directory. The local history panel can configure short-text, password-like, credit-card-like, and source-application filters.
+
+```shell
+--clipboard
+```
+
+Open the history panel with `Ctrl+Shift+V` on Windows/Linux or `Cmd+Shift+V` on macOS. Each entry shows the detected source application when the platform exposes it. When the system tray is enabled, the tray menu also contains **Clipboard History**.
+
+#### [clipboard-max]
+
+Set the maximum number of clipboard history records. The accepted range is `500` to `5000`, and the default is `2000`. The value is preserved in the generated configuration even when `--clipboard` is omitted, but it has no effect until clipboard history is enabled.
+
+The packaged value remains authoritative when the same app is rebuilt, while locally configured privacy filters are preserved.
+
+```shell
+pake https://example.com --clipboard --clipboard-max 3000
+```
+
 ### Packaging Complete
 
 After completing the above steps, your application should be successfully packaged. Please note that the packaging process may take some time depending on your system configuration and network conditions. Be patient, and once the packaging is complete, you can find the application installer in the specified directory.

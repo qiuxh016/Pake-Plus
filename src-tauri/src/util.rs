@@ -47,6 +47,15 @@ pub fn get_data_dir(app: &AppHandle, package_name: String) -> std::io::Result<Pa
     Ok(data_dir)
 }
 
+pub fn get_download_dir(app: &AppHandle) -> Result<PathBuf, tauri::Error> {
+    let download_dir = env::var_os("PAKE_DOWNLOAD_DIR")
+        .map(PathBuf::from)
+        .map(Ok)
+        .unwrap_or_else(|| app.path().download_dir())?;
+    std::fs::create_dir_all(&download_dir).map_err(tauri::Error::Io)?;
+    Ok(download_dir)
+}
+
 pub fn show_toast(window: &WebviewWindow, message: &str) {
     let script = format!(r#"pakeToast("{message}");"#);
     if let Err(error) = window.eval(&script) {
