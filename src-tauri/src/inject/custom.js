@@ -61,6 +61,8 @@ document.title += " [D面板已注入]";
       ae: "启用拦截",
       ah: "自动过滤广告与跟踪请求",
       ar: "自定义规则",
+      are: "✏ 编辑规则",
+      ard: "✕ 收起",
       arh: "每行一条，||匹配域名 ##隐藏元素",
       arb: "高级",
       ct: "离线缓存",
@@ -69,7 +71,10 @@ document.title += " [D面板已注入]";
       ceh: "自动缓存浏览过的资源",
       cl: "缓存上限",
       cs: "统计",
+      cf: "缓存文件数",
+      cu: "已用空间",
       ch: "命中率（近1小时）",
+      cc: "命中 / 未命中",
       pt: "剪贴板管理",
       pd: "系统级监听，历史记录一键复用",
       pe: "启用监听",
@@ -83,6 +88,8 @@ document.title += " [D面板已注入]";
       de: "导出数据",
       ded: "打包为 .pake-data.zip",
       deb: "导出",
+      dp: "选择保存路径...",
+      dpb: "选择",
       di: "导入数据",
       did: "从下载目录读取恢复",
       dib: "导入",
@@ -139,6 +146,8 @@ document.title += " [D面板已注入]";
       ae: "Enable",
       ah: "Filter ads & tracking",
       ar: "Custom rules",
+      are: "✏ Edit rules",
+      ard: "✕ Hide",
       arh: "One per line, ||domain or ##.selector",
       arb: "Advanced",
       ct: "Cache",
@@ -147,7 +156,10 @@ document.title += " [D面板已注入]";
       ceh: "Auto-cache resources",
       cl: "Cache limit",
       cs: "Statistics",
+      cf: "Cached files",
+      cu: "Used",
       ch: "Hit rate (1h)",
+      cc: "Hit / Miss",
       pt: "Clipboard",
       pd: "System monitor, history reuse",
       pe: "Enable",
@@ -161,6 +173,8 @@ document.title += " [D面板已注入]";
       de: "Export",
       ded: "Package as .pake-data.zip",
       deb: "Export",
+      dp: "Select save path...",
+      dpb: "Browse",
       di: "Import",
       did: "Read from Downloads",
       dib: "Import",
@@ -260,9 +274,10 @@ document.title += " [D面板已注入]";
   }
   function kv(l, v) {
     return (
-      '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f8fafc"><span style="color:#94a3b8">' +
+      '<div style="padding:5px 0;border-bottom:1px solid #f8fafc">' +
+      '<span style="color:#94a3b8;font-size:10px">' +
       l +
-      '</span><span style="font-weight:500;color:#334155">' +
+      '</span><br><span style="font-weight:500;color:#334155;font-size:11px;word-break:break-all">' +
       v +
       "</span></div>"
     );
@@ -419,12 +434,12 @@ document.title += " [D面板已注入]";
       txt(m[1], "font-size:11px;color:#94a3b8;margin-bottom:18px"),
     );
 
-    if (name === "general") buildGeneral(body);
+    if (name === "general") { buildGeneral(body); loadVersionHistory(); }
     else if (name === "adblock") buildAdblock(body);
     else if (name === "cache") buildCache(body);
     else if (name === "clipboard") buildClipboard(body);
     else if (name === "data") buildData(body);
-    else if (name === "about") buildAbout(body);
+    else if (name === "about") { buildAbout(body); fillDiagnostics(); }
 
     buildNav();
     if (S) {
@@ -490,27 +505,35 @@ document.title += " [D面板已注入]";
     body.appendChild(c);
     c.appendChild(row(t("ae"), t("ah"), tg("__ps_adblk__")));
     var c2 = card();
-    body.appendChild(c2);
-    var h = txt(
-      "",
-      "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px",
-    );
-    h.innerHTML =
+    c2.id = "__ps_abcard__";
+    // Build everything via innerHTML to avoid DOM manipulation issues
+    c2.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+      '<div><span style="font-size:12px;font-weight:600;color:#334155">' +
       t("ar") +
-      ' <span style="font-size:10px;background:#eff6ff;color:#3b82f6;padding:2px 8px;border-radius:10px;margin-left:4px">' +
+      '</span> <span style="font-size:10px;background:#eff6ff;color:#3b82f6;padding:2px 8px;border-radius:10px;margin-left:4px">' +
       t("arb") +
-      "</span>";
-    c2.appendChild(h);
-    c2.appendChild(
-      txt(t("arh"), "font-size:10px;color:#94a3b8;margin-bottom:10px"),
-    );
-    var ta = el(
-      "textarea",
-      "width:100%;height:90px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-family:SF Mono,Consolas,monospace;font-size:11px;resize:none;outline:none;background:#f8fafc;line-height:1.6",
-    );
-    ta.id = "__ps_rules__";
-    ta.placeholder = "||doubleclick.net^\n##.banner-ad";
-    c2.appendChild(ta);
+      '</span></div>' +
+      '<button id="__ps_abedit__" style="flex-shrink:0;background:none;border:1px solid #3b82f6;color:#3b82f6;padding:3px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap">' +
+      t("are") +
+      '</button></div>' +
+      '<div class="row-hint" style="font-size:10px;color:#94a3b8;margin-bottom:10px">' +
+      t("arh") +
+      '</div>' +
+      '<textarea id="__ps_rules__" ' +
+      'style="width:100%;height:90px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font-family:SF Mono,Consolas,monospace;font-size:11px;line-height:1.6" ' +
+      'placeholder="||doubleclick.net^\n##.banner-ad"></textarea>';
+    body.appendChild(c2);
+    // Bind edit button after DOM is created
+    setTimeout(function () {
+      var btn = document.getElementById("__ps_abedit__");
+      if (btn) {
+        btn.onclick = function () {
+          var ta = document.getElementById("__ps_rules__");
+          if (ta) ta.focus();
+        };
+      }
+    }, 0);
   }
 
   function buildCache(body) {
@@ -551,15 +574,25 @@ document.title += " [D面板已注入]";
         "font-size:12px;font-weight:600;color:#334155;margin-bottom:10px",
       ),
     );
-    var s = el(
-      "div",
-      "display:flex;justify-content:space-between;padding:6px 0",
-    );
-    s.innerHTML =
-      '<span style="font-size:11px;color:#94a3b8">' +
-      t("ch") +
-      '</span><span style="font-size:13px;font-weight:700;color:#3b82f6" id="__ps_chit__">0%</span>';
-    c2.appendChild(s);
+    // stat rows — filled by fillCache()
+    var rows = [
+      [t("cf"), "__ps_cfiles__", "0"],
+      [t("cu"), "__ps_csizeused__", "0 MB"],
+      [t("ch"), "__ps_chit__", "0%"],
+      [t("cc"), "__ps_chits__", "0 / 0"],
+    ];
+    for (var i = 0; i < rows.length; i++) {
+      var sr = el("div", "display:flex;justify-content:space-between;padding:6px 0");
+      sr.innerHTML =
+        '<span style="font-size:11px;color:#94a3b8">' +
+        rows[i][0] +
+        '</span><span style="font-size:13px;font-weight:700;color:#3b82f6" id="' +
+        rows[i][1] +
+        '">' +
+        rows[i][2] +
+        "</span>";
+      c2.appendChild(sr);
+    }
   }
 
   function buildClipboard(body) {
@@ -671,56 +704,109 @@ document.title += " [D面板已注入]";
     } catch (e) {}
   }
   function buildData(body) {
+    // === Export card ===
     var c = card();
     body.appendChild(c);
-    var r = el(
-      "div",
-      "display:flex;align-items:center;justify-content:space-between",
-    );
-    r.appendChild(
-      txt(
-        t("de") +
-          '<div style="font-size:10px;color:#94a3b8;margin-top:2px">' +
-          t("ded") +
-          "</div>",
-        "font-size:12px;font-weight:600;color:#334155",
+    var expTitle = el("div", "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px");
+    expTitle.textContent = t("de");
+    c.appendChild(expTitle);
+    var dld = el("div", "font-size:10px;color:#94a3b8;margin-bottom:8px");
+    dld.id = "__ps_dl_dir__";
+    dld.textContent = "Downloads";
+    c.appendChild(dld);
+    I("get_download_dir").then(function (p) { if (p) dld.textContent = p; }).catch(function(){});
+    // Quick export to Downloads
+    c.appendChild(
+      btn(
+        "📦 " + t("deb") + " → Downloads",
+        "width:100%;padding:8px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:6px",
+        function () { doExport(null); },
       ),
     );
-    r.appendChild(
+    // OR pick custom path
+    var expPath = el(
+      "input",
+      "width:100%;padding:7px 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:10px;background:#f8fafc;color:#64748b;outline:none;margin-bottom:6px",
+    );
+    expPath.id = "__ps_exp_path__";
+    expPath.readOnly = true;
+    expPath.placeholder = "... or pick a custom location";
+    c.appendChild(expPath);
+    var expBtnRow = el("div", "display:flex;gap:6px");
+    expBtnRow.appendChild(
+      btn(
+        "📂",
+        "padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:12px;cursor:pointer;flex-shrink:0",
+        function () {
+          I("pick_save_path").then(function (p) { if (p) expPath.value = p; })
+            .catch(function (e) { console.error("[Pake] pick_save_path:", e); });
+        },
+      ),
+    );
+    expBtnRow.appendChild(
       btn(
         t("deb"),
-        "padding:8px 16px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:11px;font-weight:600;cursor:pointer",
-        doExport,
+        "flex:1;padding:7px 0;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:11px;font-weight:600;cursor:pointer",
+        function () {
+          var p = document.getElementById("__ps_exp_path__");
+          doExport(p && p.value ? p.value : null);
+        },
       ),
     );
-    c.appendChild(r);
-    var res = el("div", "font-size:10px;color:#94a3b8;margin-top:8px");
+    c.appendChild(expBtnRow);
+    var res = el("div", "font-size:10px;margin-top:6px");
     res.id = "__ps_exp_res__";
     c.appendChild(res);
+
+    // === Import card ===
     var c2 = card();
     body.appendChild(c2);
-    var r2 = el(
-      "div",
-      "display:flex;align-items:center;justify-content:space-between",
-    );
-    r2.appendChild(
-      txt(
-        t("di") +
-          '<div style="font-size:10px;color:#94a3b8;margin-top:2px">' +
-          t("did") +
-          "</div>",
-        "font-size:12px;font-weight:600;color:#334155",
+    var impTitle = el("div", "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px");
+    impTitle.textContent = t("di");
+    c2.appendChild(impTitle);
+    var impHint = el("div", "font-size:10px;color:#94a3b8;margin-bottom:6px");
+    impHint.textContent = t("did");
+    c2.appendChild(impHint);
+    // Quick import from Downloads
+    c2.appendChild(
+      btn(
+        "📥 " + t("dib") + " (Downloads)",
+        "width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:6px",
+        function () { doImport(null); },
       ),
     );
-    r2.appendChild(
+    // OR pick custom file
+    var impPath = el(
+      "input",
+      "width:100%;padding:7px 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:10px;background:#f8fafc;color:#64748b;outline:none;margin-bottom:6px",
+    );
+    impPath.id = "__ps_imp_path__";
+    impPath.readOnly = true;
+    impPath.placeholder = "... or select a specific .zip file";
+    c2.appendChild(impPath);
+    var impBtnRow = el("div", "display:flex;gap:6px");
+    impBtnRow.appendChild(
+      btn(
+        "📂",
+        "padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:12px;cursor:pointer;flex-shrink:0",
+        function () {
+          I("pick_zip_file").then(function (p) { if (p) impPath.value = p; })
+            .catch(function (e) { console.error("[Pake] pick_zip_file:", e); });
+        },
+      ),
+    );
+    impBtnRow.appendChild(
       btn(
         t("dib"),
-        "padding:8px 16px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer",
-        doImport,
+        "flex:1;padding:7px 0;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer",
+        function () {
+          var p = document.getElementById("__ps_imp_path__");
+          doImport(p && p.value ? p.value : null);
+        },
       ),
     );
-    c2.appendChild(r2);
-    var res2 = el("div", "font-size:10px;color:#94a3b8;margin-top:8px");
+    c2.appendChild(impBtnRow);
+    var res2 = el("div", "font-size:10px;margin-top:6px");
     res2.id = "__ps_imp_res__";
     c2.appendChild(res2);
   }
@@ -816,8 +902,25 @@ document.title += " [D面板已注入]";
     if (r) r.value = S.cache.max_size_mb || 200;
     var v = document.getElementById("__ps_cval__");
     if (v) v.textContent = (S.cache.max_size_mb || 200) + " MB";
-    var h = document.getElementById("__ps_chit__");
-    if (h) h.textContent = Math.round(S.cache.hit_rate_1h || 0) + "%";
+    // Fetch real-time stats from the cache engine
+    I("cache_stats_json")
+      .then(function (stats) {
+        var f = document.getElementById("__ps_cfiles__");
+        if (f) f.textContent = stats.fileCount || "0";
+        var u = document.getElementById("__ps_csizeused__");
+        if (u) u.textContent = (stats.totalSizeMB || "0") + " MB";
+        var h = document.getElementById("__ps_chit__");
+        if (h) h.textContent = (stats.hitRate1h || "0%");
+        var c = document.getElementById("__ps_chits__");
+        if (c) c.textContent = (stats.hitCount || 0) + " / " + (stats.missCount || 0);
+      })
+      .catch(function () {
+        // Fall back to cached settings
+        var h = document.getElementById("__ps_chit__");
+        if (h) h.textContent = Math.round(S.cache.hit_rate_1h || 0) + "%";
+        var c = document.getElementById("__ps_chits__");
+        if (c) c.textContent = "0 / 0";
+      });
   }
   function fillClipboard() {
     if (!S || !S.clipboard) return;
@@ -828,28 +931,37 @@ document.title += " [D面板已注入]";
     if (rd) rd.value = S.clipboard.retention_days || 30;
     tglSet("__ps_cshort__", S.clipboard.ignore_short);
   }
+  var _diagData = null;
   function loadDiagnostics() {
     I("get_diagnostics")
       .then(function (d) {
-        var a = document.getElementById("__ps_dapp__");
-        if (a)
-          a.innerHTML =
-            kv(t("v"), "v" + d.app_version) +
-            kv(t("gi"), d.git_commit) +
-            kv(t("bt"), d.build_time) +
-            kv(t("ru"), d.rustc_version) +
-            kv(t("tg"), d.target_triple) +
-            kv(t("fe"), (d.enabled_features || []).join(", ") || "-");
-        var s = document.getElementById("__ps_dsys__");
-        if (s)
-          s.innerHTML =
-            kv(t("o"), d.os_name + " " + d.os_version) +
-            kv(t("cp"), d.cpu_cores + "") +
-            kv(t("rm"), d.used_ram_mb + " / " + d.total_ram_mb + " MB") +
-            kv(t("dk"), d.disk_free_mb + " / " + d.disk_total_mb + " MB") +
-            kv(t("pi"), d.pid);
+        _diagData = d;
+        fillDiagnostics();
       })
-      .catch(function () {});
+      .catch(function (e) {
+        console.error("[Pake] get_diagnostics failed:", e);
+      });
+  }
+  function fillDiagnostics() {
+    var d = _diagData;
+    if (!d) return;
+    var a = document.getElementById("__ps_dapp__");
+    if (a)
+      a.innerHTML =
+        kv(t("v"), "v" + d.app_version) +
+        kv(t("gi"), (d.git_commit || "").substring(0, 8)) +
+        kv(t("bt"), d.build_time) +
+        kv(t("ru"), d.rustc_version) +
+        kv(t("tg"), d.target_triple) +
+        kv(t("fe"), (d.enabled_features || []).join(", ") || "-");
+    var s = document.getElementById("__ps_dsys__");
+    if (s)
+      s.innerHTML =
+        kv(t("o"), d.os_name + " " + d.os_version) +
+        kv(t("cp"), d.cpu_cores + "") +
+        kv(t("rm"), d.used_ram_mb + " / " + d.total_ram_mb + " MB") +
+        kv(t("dk"), d.disk_free_mb + " / " + d.disk_total_mb + " MB") +
+        kv(t("pi"), d.pid);
   }
 
   // ====== Actions ======
@@ -928,6 +1040,40 @@ document.title += " [D面板已注入]";
             }
             dirty = false;
             toast(t("ts"));
+            console.log("[Pake] Save OK — updating version history");
+            // Insert new version at top of history immediately
+            var vh = document.getElementById("__ps_versions__");
+            if (vh) {
+              var now = new Date();
+              var ts = now.getFullYear() + "-" +
+                String(now.getMonth() + 1).padStart(2, "0") + "-" +
+                String(now.getDate()).padStart(2, "0") + " " +
+                String(now.getHours()).padStart(2, "0") + ":" +
+                String(now.getMinutes()).padStart(2, "0") + ":" +
+                String(now.getSeconds()).padStart(2, "0");
+              var row = el("div", "display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9");
+              row.innerHTML = '<span style="color:#3b82f6;font-weight:600">v1 — ' + ts + ' <span style="font-size:9px;color:#94a3b8">(just saved)</span></span>';
+              var rst = btn("Restore", "padding:3px 10px;border:1px solid #e2e8f0;border-radius:5px;background:#fff;color:#3b82f6;font-size:10px;font-weight:600;cursor:pointer", function () { doRollback(1); });
+              row.appendChild(rst);
+              if (vh.firstChild) {
+                vh.insertBefore(row, vh.firstChild);
+              } else {
+                vh.appendChild(row);
+              }
+              // Limit display to 5
+              while (vh.children.length > 5) { vh.removeChild(vh.lastChild); }
+              // Re-number existing rows
+              for (var i = 1; i < vh.children.length; i++) {
+                var spans = vh.children[i].querySelectorAll("span");
+                if (spans.length) {
+                  spans[0].innerHTML = spans[0].innerHTML.replace(/^v\d+/, "v" + (i + 1));
+                  spans[0].style.color = "#64748b";
+                  spans[0].style.fontWeight = "normal";
+                }
+                var btns = vh.children[i].querySelectorAll("button");
+                if (btns.length) btns[0].onclick = (function (ver) { return function () { doRollback(ver); }; })(i + 1);
+              }
+            }
           })
           .catch(function (e) {
             console.error("[Pake] save failed:", e);
@@ -962,16 +1108,18 @@ document.title += " [D面板已注入]";
         toast(t("tf") + ": " + e);
       });
   }
-  function doExport() {
+  function doExport(savePath) {
     var el2 = document.getElementById("__ps_exp_res__");
     if (el2) {
-      el2.textContent = t("tex");
+      el2.textContent = "exporting...";
       el2.style.color = "#94a3b8";
     }
-    I("export_data")
+    var args = {};
+    if (savePath) args.savePath = savePath;
+    I("export_data", args)
       .then(function (p) {
         if (el2) {
-          el2.textContent = t("teok") + ": " + p;
+          el2.textContent = p;
           el2.style.color = "#16a34a";
         }
         toast(t("teok"));
@@ -979,18 +1127,21 @@ document.title += " [D面板已注入]";
       .catch(function (e) {
         console.error("[Pake] export failed:", e);
         if (el2) {
-          el2.textContent = t("tef");
+          el2.textContent = "ERR: " + e;
           el2.style.color = "#dc2626";
         }
+        alert("Export failed: " + e);
       });
   }
-  function doImport() {
+  function doImport(zipPath) {
     var el2 = document.getElementById("__ps_imp_res__");
     if (el2) {
       el2.textContent = "previewing...";
       el2.style.color = "#94a3b8";
     }
-    I("preview_import")
+    var pvArgs = {};
+    if (zipPath) pvArgs.zipPath = zipPath;
+    I("preview_import", pvArgs)
       .then(function (preview) {
         var ok = confirm(preview + "\n\nProceed with import?");
         if (!ok) {
@@ -1001,10 +1152,12 @@ document.title += " [D面板已注入]";
           return;
         }
         if (el2) {
-          el2.textContent = t("tim");
+          el2.textContent = "importing...";
           el2.style.color = "#94a3b8";
         }
-        I("import_data")
+        var args = {};
+        if (zipPath) args.zipPath = zipPath;
+        I("import_data", args)
           .then(function (m) {
             if (el2) {
               el2.textContent = m;
@@ -1041,10 +1194,11 @@ document.title += " [D面板已注入]";
       });
   }
   function loadVersionHistory() {
+    var vh = document.getElementById("__ps_versions__");
+    if (!vh) { console.log("[Pake] loadVersionHistory: element not found"); return; }
     I("list_backups")
       .then(function (list) {
-        var vh = document.getElementById("__ps_versions__");
-        if (!vh) return;
+        console.log("[Pake] loadVersionHistory: got", list ? list.length : 0, "backups");
         if (!list || !list.length) {
           vh.innerHTML = '<span style="color:#94a3b8">No backups yet</span>';
           return;
@@ -1112,29 +1266,79 @@ document.title += " [D面板已注入]";
 
   // ====== Welcome page ======
   function showWelcome() {
+    // Always allow welcome to show via button, skip auto-show only if flagged
+    if (window.name === "pw") return;
+    window.name = "pw";
+    // Full-screen dark backdrop
+    var bg = document.getElementById("__ps_welcome_bg__");
+    if (!bg) {
+      bg = document.createElement("div");
+      bg.id = "__ps_welcome_bg__";
+      bg.style.cssText =
+        "position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483646;" +
+        "background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%)";
+      document.body.appendChild(bg);
+    }
+
+    // Centered card
     var w = document.getElementById("__ps_welcome__");
     if (w) return;
-    w = el(
-      "div",
-      "position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483645;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif;transition:opacity .4s",
-    );
+    w = document.createElement("div");
     w.id = "__ps_welcome__";
+    w.style.cssText =
+      "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483647;" +
+      "text-align:center;max-width:520px;width:90%;" +
+      "font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif;";
+
     w.innerHTML =
-      '<div style="text-align:center;max-width:520px">' +
       '<div style="width:64px;height:64px;margin:0 auto 20px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff">P</div>' +
       '<h1 style="font-size:28px;font-weight:800;color:#f1f5f9;margin:0 0 6px">Pake Plus</h1>' +
-      '<p style="font-size:13px;color:#94a3b8;margin:0 0 32px">Lightweight desktop app with superpowers</p>' +
-      '<div style="display:flex;gap:12px;margin-bottom:32px" id="__ps_welcome_cards__"></div>' +
-      "<button id=\"__ps_welcome_start__\" style=\"padding:12px 48px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(59,130,246,.3);transition:transform .15s,box-shadow .15s\" onmouseover=\"this.style.transform='scale(1.03)';this.style.boxShadow='0 6px 28px rgba(59,130,246,.4)'\" onmouseout=\"this.style.transform='scale(1)';this.style.boxShadow='0 4px 20px rgba(59,130,246,.3)'\">Start</button>" +
-      "</div>";
+      '<p style="font-size:13px;color:#94a3b8;margin:0 0 24px">Lightweight desktop app with superpowers</p>' +
+      '<div style="display:flex;gap:12px;margin-bottom:24px" id="__ps_welcome_cards__">' +
+      '<div style="color:#94a3b8;font-size:12px">Loading...</div></div>' +
+      '<input id="__ps_welcome_url__" type="text" placeholder="Enter URL to open..." ' +
+      'style="width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-radius:10px;' +
+      'font-size:15px;font-family:SF Mono,Consolas,monospace;color:#e2e8f0;margin-bottom:20px;' +
+      'outline:none;background:rgba(255,255,255,.08);text-align:center" ' +
+      'value="' + location.href + '"><br>' +
+      '<button id="__ps_welcome_start__" ' +
+      'style="padding:14px 56px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(59,130,246,.3)">' +
+      'Start</button>';
     document.body.appendChild(w);
 
-    document.getElementById("__ps_welcome_start__").onclick = function () {
-      w.style.opacity = "0";
-      setTimeout(function () {
-        if (w.parentNode) w.parentNode.removeChild(w);
-      }, 400);
-    };
+    // Bind events
+    var startBtn = document.getElementById("__ps_welcome_start__");
+    if (startBtn) {
+      startBtn.onclick = function () {
+        var uel = document.getElementById("__ps_welcome_url__");
+        if (uel && uel.value.trim()) {
+          var raw = uel.value.trim();
+          var u = raw.toLowerCase();
+          if (!u.startsWith("http://") && !u.startsWith("https://")) {
+            if (u.indexOf(".") === -1) u = u + ".com";
+            u = "https://" + u;
+          }
+          // Keep welcome visible to cover old page during navigation
+          window.name = "pw";
+          location.href = u;
+          return;
+        }
+        // No URL entered, just close welcome
+        window.name = "pw";
+        w.style.opacity = "0";
+        bg.style.opacity = "0";
+        setTimeout(function () {
+          if (w.parentNode) w.parentNode.removeChild(w);
+          if (bg.parentNode) bg.parentNode.removeChild(bg);
+        }, 400);
+      };
+    }
+    var urlInput = document.getElementById("__ps_welcome_url__");
+    if (urlInput) {
+      urlInput.onkeydown = function (e) {
+        if (e.key === "Enter" && startBtn) startBtn.click();
+      };
+    }
 
     // Load status
     var cards = document.getElementById("__ps_welcome_cards__");
@@ -1178,7 +1382,7 @@ document.title += " [D面板已注入]";
   function card2(icon, name, status, color) {
     return (
       '<div style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 12px;text-align:center">' +
-      '<div style="font-size:24px;margin-bottom:6px">' +
+      '<div style="width:36px;height:36px;margin:0 auto 6px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#e2e8f0">' +
       icon +
       "</div>" +
       '<div style="font-size:11px;color:#e2e8f0;font-weight:600;margin-bottom:4px">' +
@@ -1192,38 +1396,59 @@ document.title += " [D面板已注入]";
     );
   }
 
-  // ====== DOM init (deferred until DOMContentLoaded) ======
-  document.addEventListener("DOMContentLoaded", function () {
+  // ====== DOM init ======
+  function initUI() {
+    if (!document.body) { setTimeout(initUI, 50); return; }
     // Welcome page
     showWelcome();
 
-    // Floating button
-    var fab = el(
-      "div",
-      "position:fixed;bottom:28px;right:28px;z-index:2147483640",
-    );
-    fab.innerHTML =
-      '<div id="__ps_fab_inner__" style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;box-shadow:0 4px 16px rgba(59,130,246,.3);cursor:pointer;transition:all .2s;user-select:none">⚙</div>';
-    fab.onclick = function () {
-      window.__pakeOpenSettings();
+    // Refresh button
+    var __prb = document.createElement("div");
+    __prb.style.cssText =
+      "position:fixed;top:20px;right:20px;z-index:2147483640;width:40px;height:40px;background:#fff;border:2px solid #3b82f6;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:20px;font-weight:700;box-shadow:0 2px 12px rgba(59,130,246,.2);transition:transform .15s;user-select:none";
+    __prb.textContent = "↻";
+    __prb.title = "Refresh page";
+    __prb.onclick = function () {
+      location.reload();
     };
-    document.body.appendChild(fab);
+    document.body.appendChild(__prb);
+
+    // Settings button
+    var __pgb = document.createElement("div");
+    __pgb.style.cssText =
+      "position:fixed;bottom:20px;right:20px;z-index:2147483640;width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,.35);transition:transform .15s;user-select:none";
+    __pgb.textContent = "⚙";
+    __pgb.title = "Pake Plus Settings";
+    __pgb.onclick = function () {
+      if (window.__pakeOpenSettings) window.__pakeOpenSettings();
+    };
+    document.body.appendChild(__pgb);
+
+    // Home/Welcome button (bottom-left)
+    var __phb = document.createElement("div");
+    __phb.style.cssText =
+      "position:fixed;bottom:20px;left:20px;z-index:2147483640;width:40px;height:40px;" +
+      "background:#fff;border:2px solid #e2e8f0;border-radius:12px;cursor:pointer;" +
+      "display:flex;align-items:center;justify-content:center;font-size:18px;" +
+      "box-shadow:0 2px 8px rgba(0,0,0,.06);transition:transform .15s;user-select:none";
+    __phb.textContent = "\u{1F3E0}";
+    __phb.title = "Home";
+    __phb.onclick = function () {
+      window.name = "";  // clear flag so welcome shows
+      // Remove existing welcome if any
+      var oldW = document.getElementById("__ps_welcome__");
+      var oldBg = document.getElementById("__ps_welcome_bg__");
+      if (oldW) oldW.parentNode.removeChild(oldW);
+      if (oldBg) oldBg.parentNode.removeChild(oldBg);
+      showWelcome();
+    };
+    document.body.appendChild(__phb);
 
     // Toggle CSS
     var css = document.createElement("style");
     css.textContent =
       '.__ps_tgl__{width:42px;height:24px;background:#cbd5e1;border-radius:12px;cursor:pointer;flex-shrink:0;position:relative;transition:background .2s}.__ps_tgl__.on{background:#3b82f6}.__ps_tgl__::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.12)}.__ps_tgl__.on::after{transform:translateX(18px)}';
     document.head.appendChild(css);
-  });
+  }
+  initUI();
 })();
-try {
-  var __pgb = document.createElement("div");
-  __pgb.style.cssText =
-    "position:fixed;bottom:20px;right:20px;z-index:2147483640;width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,.35);transition:transform .15s;user-select:none";
-  __pgb.textContent = "⚙";
-  __pgb.title = "Pake Plus Settings";
-  __pgb.onclick = function () {
-    if (window.__pakeOpenSettings) window.__pakeOpenSettings();
-  };
-  document.documentElement.appendChild(__pgb);
-} catch (e) {}

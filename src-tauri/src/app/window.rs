@@ -336,6 +336,23 @@ fn build_window(
         }
     }
 
+    if config.cache {
+        let cache_state = app.try_state::<crate::cache::CacheState>();
+        if let Some(state) = cache_state {
+            if state.enabled {
+                let cache_config = format!(
+                    "window.pakeCache = {};",
+                    serde_json::json!({
+                        "enabled": true,
+                    })
+                );
+                window_builder = window_builder
+                    .initialization_script(&cache_config)
+                    .initialization_script(include_str!("../inject/cache.js"));
+            }
+        }
+    }
+
     window_builder = window_builder.initialization_script(include_str!("../inject/custom.js"));
 
     #[cfg(target_os = "windows")]

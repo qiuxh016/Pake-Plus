@@ -38,6 +38,7 @@ pub fn load_settings(app: &AppHandle) -> AppSettings {
 pub fn write_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), String> {
     ensure_data_dir(app);
     let path = settings_path(app);
+    eprintln!("[Pake] write_settings: path={}", path.display());
 
     // Rotate backups before overwriting
     if path.exists() {
@@ -45,11 +46,24 @@ pub fn write_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), Str
             let older = path.with_extension(format!("v{}.json", i));
             let newer = path.with_extension(format!("v{}.json", i + 1));
             if older.exists() {
-                let _ = fs::rename(&older, &newer);
+                // Remove destination first to avoid rename conflicts on Windows
+                if newer.exists() {
+                    let _ = fs::remove_file(&newer);
+                }
+                if let Err(e) = fs::rename(&older, &newer) {
+                    eprintln!("[Pake] Backup rotate v{}→v{} failed: {}", i, i + 1, e);
+                }
             }
         }
         let v1 = path.with_extension("v1.json");
-        let _ = fs::copy(&path, &v1);
+        if v1.exists() {
+            let _ = fs::remove_file(&v1);
+        }
+        if let Err(e) = fs::copy(&path, &v1) {
+            eprintln!("[Pake] Backup copy → v1 failed: {}", e);
+        } else {
+            eprintln!("[Pake] Backup v1 created successfully");
+        }
     }
 
     let json =
@@ -60,6 +74,7 @@ pub fn write_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), Str
 
 pub fn get_backup_list(app: &AppHandle) -> Vec<serde_json::Value> {
     let path = settings_path(app);
+    eprintln!("[Pake] get_backup_list: path={}", path.display());
     let mut backups = Vec::new();
     for i in 1..=MAX_BACKUPS {
         let bak = path.with_extension(format!("v{}.json", i));
@@ -68,7 +83,7 @@ pub fn get_backup_list(app: &AppHandle) -> Vec<serde_json::Value> {
                 if let Ok(modified) = meta.modified() {
                     if let Ok(dur) = modified.duration_since(std::time::UNIX_EPOCH) {
                         let ts = chrono::DateTime::from_timestamp(dur.as_secs() as i64, 0)
-                            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                            .map(|dt| dt.with_timezone(&chrono::Local).format("%Y-%m-%d %H:%M:%S").to_string())
                             .unwrap_or_default();
                         backups.push(serde_json::json!({
                             "version": i,

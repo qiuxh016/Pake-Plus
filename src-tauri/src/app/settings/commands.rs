@@ -44,6 +44,9 @@ pub fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String
         }
     }
 
+    // Sync cache config to the engine if it's running
+    crate::cache::sync_cache_config(&app, settings.cache.enabled, settings.cache.max_size_mb);
+
     Ok(())
 }
 
@@ -77,7 +80,9 @@ pub fn get_module_stats(app: AppHandle) -> serde_json::Value {
 #[command]
 pub fn pick_save_path() -> Result<String, String> {
     rfd::FileDialog::new()
-        .set_title("选择导出位置")
+        .set_title("Save exported data")
+        .set_file_name("pake-data.zip")
+        .add_filter("ZIP files", &["zip"])
         .save_file()
         .map(|p| p.to_string_lossy().to_string())
         .ok_or_else(|| "cancelled".into())
@@ -86,11 +91,32 @@ pub fn pick_save_path() -> Result<String, String> {
 #[command]
 pub fn pick_zip_file() -> Result<String, String> {
     rfd::FileDialog::new()
-        .set_title("选择数据文件")
-        .add_filter("ZIP 文件", &["zip"])
+        .set_title("Select data file to import")
+        .add_filter("ZIP files", &["zip"])
         .pick_file()
         .map(|p| p.to_string_lossy().to_string())
         .ok_or_else(|| "cancelled".into())
+}
+
+/// Returns the default download directory path for showing in UI
+#[command]
+pub fn get_download_dir(app: AppHandle) -> Result<String, String> {
+    let dir = app
+        .path()
+        .download_dir()
+        .unwrap_or_else(|_| PathBuf::from("."));
+    Ok(dir.to_string_lossy().to_string())
+}
+
+#[command]
+pub fn get_default_export_path(app: AppHandle) -> Result<String, String> {
+    let default_name = format!("pake-data-{}.zip", chrono::Local::now().format("%Y%m%d"));
+    let path = app
+        .path()
+        .download_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(&default_name);
+    Ok(path.to_string_lossy().to_string())
 }
 
 // ========== Export / Import ==========
@@ -228,35 +254,48 @@ pub fn export_data(app: AppHandle, save_path: Option<String>) -> Result<String, 
 }
 
 #[command]
-pub fn preview_import(app: AppHandle) -> Result<String, String> {
-    let downloads = app
-        .path()
-        .download_dir()
-        .unwrap_or_else(|_| PathBuf::from("."));
+pub fn preview_import(app: AppHandle, zip_path: Option<String>) -> Result<String, String> {
+    let zip_path = if let Some(custom_path) = zip_path {
+        let p = PathBuf::from(&custom_path);
+        if !p.exists() {
+            return Err(format!("file not found: {}", custom_path));
+        }
+        p
+    } else {
+        let downloads = app
+            .path()
+            .download_dir()
+            .unwrap_or_else(|_| PathBuf::from("."));
 
-    let mut zip_files: Vec<_> = fs::read_dir(&downloads)
-        .map_err(|e| format!("failed to read downloads dir: {}", e))?
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with("pake-data-") && name.ends_with(".zip") {
-                let metadata = entry.metadata().ok()?;
-                let modified = metadata.modified().ok()?;
-                Some((entry.path(), modified, name))
-            } else {
-                None
-            }
-        })
-        .collect();
+        let mut zip_files: Vec<_> = fs::read_dir(&downloads)
+            .map_err(|e| format!("failed to read downloads dir: {}", e))?
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.starts_with("pake-data-") && name.ends_with(".zip") {
+                    let metadata = entry.metadata().ok()?;
+                    let modified = metadata.modified().ok()?;
+                    Some((entry.path(), modified, name))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-    if zip_files.is_empty() {
-        return Err("no data file found (pake-data-*.zip) in Downloads".into());
-    }
+        if zip_files.is_empty() {
+            return Err("no data file found (pake-data-*.zip) in Downloads".into());
+        }
 
-    zip_files.sort_by(|a, b| b.1.cmp(&a.1));
-    let (zip_path, _, zip_name) = &zip_files[0];
+        zip_files.sort_by(|a, b| b.1.cmp(&a.1));
+        zip_files.remove(0).0
+    };
 
-    let zip_file = fs::File::open(zip_path).map_err(|e| format!("failed to open ZIP: {}", e))?;
+    let zip_name = zip_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "unknown.zip".to_string());
+
+    let zip_file = fs::File::open(&zip_path).map_err(|e| format!("failed to open ZIP: {}", e))?;
     let mut archive =
         zip::ZipArchive::new(zip_file).map_err(|e| format!("failed to read ZIP archive: {}", e))?;
 

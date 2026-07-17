@@ -309,6 +309,8 @@
             ae: "启用拦截",
             ah: "自动过滤广告与跟踪",
             ar: "自定义规则",
+            are: "✏ 编辑规则",
+            ard: "✕ 收起",
             arh: "每行一条，||匹配域名 ##隐藏元素",
             arb: "高级",
             ct: "离线缓存",
@@ -388,6 +390,8 @@
             ae: "Enable",
             ah: "Filter ads & tracking",
             ar: "Custom rules",
+            are: "✏ Edit rules",
+            ard: "✕ Hide",
             arh: "One per line, ||domain ##.selector",
             arb: "Advanced",
             ct: "Cache",
@@ -566,24 +570,37 @@
         function renderAdblock(c) {
           var ca = card(t("at"), t("ad"));
           ca.appendChild(row(t("ae"), t("ah"), tgBtn("__ps_ab__")));
-          ca.appendChild(
-            (function () {
-              var r = document.createElement("div");
-              r.className = "row";
-              var l = document.createElement("div");
-              l.innerHTML =
-                '<div class="row-label">' +
-                t("ar") +
-                '</div><div class="row-hint">' +
-                t("arh") +
-                "</div>";
-              r.appendChild(l);
-              return r;
-            })(),
-          );
+          // Custom rules label row with edit button
+          var rulesRow = document.createElement("div");
+          rulesRow.className = "row";
+          var rulesL = document.createElement("div");
+          rulesL.innerHTML =
+            '<div class="row-label">' +
+            t("ar") +
+            '</div><div class="row-hint">' +
+            t("arh") +
+            "</div>";
+          var editBtn = document.createElement("button");
+          editBtn.id = "__ps_abedit__";
+          editBtn.style.cssText =
+            "flex-shrink:0;background:none;border:1px solid #3b82f6;color:#3b82f6;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap";
+          editBtn.textContent = t("are");
+          editBtn.onclick = function () {
+            var ta = document.getElementById("__ps_arules__");
+            var showing = ta.style.display !== "none";
+            ta.style.display = showing ? "none" : "block";
+            editBtn.textContent = showing ? t("are") : t("ard");
+            editBtn.style.color = showing ? "#3b82f6" : "#ef4444";
+            editBtn.style.borderColor = showing ? "#3b82f6" : "#ef4444";
+          };
+          rulesRow.appendChild(rulesL);
+          rulesRow.appendChild(editBtn);
+          ca.appendChild(rulesRow);
           var ta = document.createElement("textarea");
           ta.id = "__ps_arules__";
-          ta.placeholder = "||example.com^&#10;example.com##.ad-banner";
+          ta.style.cssText =
+            "display:none;width:100%;height:90px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-family:SF Mono,Consolas,monospace;font-size:11px;resize:none;outline:none;background:#f8fafc;line-height:1.6;margin-top:4px";
+          ta.placeholder = "||example.com^\nexample.com##.ad-banner";
           ta.onchange = function () {
             dirty = true;
           };

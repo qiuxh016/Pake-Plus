@@ -773,7 +773,7 @@ async function mergeIcons(options, name, tauriConf, platform, safeAppName) {
     delete tauriConf.app.trayIcon;
 }
 async function injectCustomCode(options, tauriConf) {
-    const { inject, proxyUrl, multiInstance, multiWindow, wasm, clipboard, clipboardMax, blockAds, adblockRules, } = options;
+    const { inject, proxyUrl, multiInstance, multiWindow, wasm, clipboard, clipboardMax, blockAds, adblockRules, cache, cacheSize, } = options;
     const injectFilePath = path.join(npmDirectory, 'src-tauri/src/inject/custom.js');
     if (inject?.length > 0) {
         const injectArray = Array.isArray(inject) ? inject : [inject];
@@ -809,6 +809,8 @@ async function injectCustomCode(options, tauriConf) {
     else {
         tauriConf.pake.adblock_rules = '';
     }
+    tauriConf.pake.cache = cache;
+    tauriConf.pake.cache_size = cacheSize;
     if (wasm) {
         tauriConf.app.security = {
             headers: {
@@ -2824,6 +2826,8 @@ const DEFAULT_PAKE_OPTIONS = {
     clipboardMax: 2000,
     blockAds: false,
     adblockRules: '',
+    cache: false,
+    cacheSize: 200,
 };
 
 function validateNumberInput(value) {
@@ -3014,6 +3018,16 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
     }))
         .addOption(new Option('--block-ads', 'Enable built-in ad/tracker blocking (EasyList engine)').default(DEFAULT_PAKE_OPTIONS.blockAds))
         .addOption(new Option('--adblock-rules <path>', 'Custom adblock rules file (merged with built-in EasyList rules)').default(DEFAULT_PAKE_OPTIONS.adblockRules))
+        .addOption(new Option('--cache', 'Enable HTTP-level offline cache proxy').default(DEFAULT_PAKE_OPTIONS.cache))
+        .addOption(new Option('--cache-size <number>', 'Cache size limit in MB (50-1000)')
+        .default(DEFAULT_PAKE_OPTIONS.cacheSize)
+        .argParser((v) => {
+        const n = Number(v);
+        if (isNaN(n) || !Number.isInteger(n) || n < 50 || n > 1000) {
+            throw new Error('--cache-size must be an integer between 50 and 1000');
+        }
+        return n;
+    }))
         .version(packageJson.version, '-v, --version')
         .configureHelp({
         sortSubcommands: true,

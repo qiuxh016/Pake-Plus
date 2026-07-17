@@ -28,6 +28,9 @@ pub fn collect_diagnostics(app: &AppHandle) -> Diagnostics {
     if settings.adblock.enabled {
         enabled_features.push("adblock".into());
     }
+    if settings.cache.enabled {
+        enabled_features.push("cache".into());
+    }
     #[cfg(feature = "clipboard")]
     if settings.clipboard.enabled {
         enabled_features.push("clipboard".into());

@@ -64,15 +64,17 @@
 }
 \author{
   \begin{tabular}{ll}
-  成员 A & 学号 XXXXXX（广告/跟踪拦截）\\
-  成员 B & 学号 XXXXXX（离线缓存代理）\\
-  成员 C & 学号 XXXXXX（剪贴板管理）\\
-  成员 D & 学号 XXXXXX（设置面板 + 数据迁移 + 诊断 + 视频）\\
+  邱晓涵 & 2023XXXXXX\\
+  韩桢   & 2023XXXXXX\\
+  陈珉玥 & 2023XXXXXX\\
+  李宜霖 & 2023XXXXXX\\
   \end{tabular}
 }
 \date{\today}
 
 \begin{document}
+
+\emergencystretch=2em
 
 \maketitle
 \thispagestyle{empty}
@@ -115,21 +117,21 @@ JavaScript 前端通过纯 DOM 操作构建用户界面。
 
 \subsection{项目简介}
 
-Pake Plus 是基于开源项目 Pake（Rust + Tauri v2）的网页桌面应用增强工具。原 Pake 项目可将任意网页打包为轻量级原生桌面应用（约 5MB），但功能仅限基础窗口管理和系统托盘。Pake Plus 在此基础上新增四个独立功能模块，使其更接近一个成熟的桌面浏览器应用。
+Pake Plus 是基于开源项目 Pake（Rust + Tauri v2）的网页桌面应用增强工具。原 Pake 项目可将任意网页打包为轻量级原生桌面应用（约 5MB），但功能仅限基础窗口管理和系统托盘。Pake Plus 在此基础上新增广告拦截、离线缓存、剪贴板管理和可视化设置面板四大功能模块，并构建了欢迎页 URL 导航系统与桌面快捷部署方案，使其成为一个功能完整的桌面浏览器应用。
 
 \subsection{团队成员与分工}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
-\begin{tabularx}{\textwidth}{c>{\centering\arraybackslash}p{3.5cm}X}
+\begin{tabularx}{\textwidth}{c>{\centering\arraybackslash}p{3.2cm}>{\centering\arraybackslash}p{2.2cm}X}
 \toprule
-成员   & 负责模块        & 核心工作 \\
+姓名   & 学号       & 负责模块        & 核心工作 \\
 \midrule
-成员 A & 广告/跟踪拦截   & EasyList 规则引擎、网络请求拦截、DOM 元素隐藏、自定义规则、拦截统计 \\
-成员 B & 离线缓存代理   & HTTP 代理拦截、磁盘缓存管理、LRU 淘汰算法、离线模式 \\
-成员 C & 剪贴板管理     & 系统剪贴板监听（FFI）、历史记录面板、全文搜索、自动清理 \\
-成员 D & 设置面板 + 数据 & 可视化配置页面、数据导出/导入（ZIP）、系统诊断、视频制作 \\
+邱晓涵 & 2023XXXXXX & 设置面板 + 数据 + 整合 & 可视化配置页面、数据导出/导入（ZIP）、系统诊断、视频制作、多模块框架集成与功能完善 \\
+韩桢   & 2023XXXXXX & 剪贴板管理     & 系统剪贴板监听（FFI）、历史记录面板、全文搜索、自动清理 \\
+陈珉玥 & 2023XXXXXX & 广告/跟踪拦截   & EasyList 规则引擎、网络请求拦截、DOM 元素隐藏、自定义规则、拦截统计 \\
+李宜霖 & 2023XXXXXX & 离线缓存代理   & HTTP 代理拦截、磁盘缓存管理、LRU 淘汰算法、离线模式 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -155,11 +157,25 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
 \subsection{改进目标}
 
 本项目旨在解决上述四个痛点，在不显著增加打包体积的前提下，通过 Rust 后端 + Tauri IPC 框架，
-为 Pake 打包的应用增加广告拦截、离线缓存、剪贴板管理和可视化设置四大功能模块。
+为 Pake 打包的应用增加四大功能模块：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=1.5cm]
+
+  \item \textbf{广告/跟踪拦截}——构建基于 EasyList 规则集的广告过滤引擎，在\textbf{网络请求层}和\textbf{页面 DOM 层}同时工作。网络层通过代理 \texttt{fetch} 和 \texttt{XMLHttpRequest} 拦截匹配黑名单的请求（域名匹配与正则匹配），阻止广告资源加载；DOM 层注入 CSS 隐藏选择器并通过 \texttt{MutationObserver} 动态监听，确保后续动态插入的广告元素也被实时隐藏。同时支持用户自定义规则、拦截统计展示、CLI 一键启用（\texttt{--block-ads}）。
+
+  \item \textbf{离线缓存代理}——在 HTTP 层实现透明代理缓存。Rust 后端拦截所有 GET 请求，先查本地缓存索引（以 URL 哈希为文件名存储到磁盘），命中且未过期直接返回缓存数据（延迟从百毫秒级降至毫秒级），未命中则发起网络请求并在响应后将内容异步写入缓存并建立索引。采用 \textbf{LRU 淘汰算法}管理磁盘空间（默认上限 200MB），监听浏览器 \texttt{online/offline} 事件自动切换离线模式——断网时显示离线横幅和提示页，已缓存页面正常访问，恢复网络后自动复原。
+
+  \item \textbf{剪贴板管理}——通过 Rust FFI 调用操作系统原生 API 实现\textbf{系统级剪贴板监听}（Windows \texttt{AddClipboardFormatListener}、macOS \texttt{NSPasteboard}、Linux X11/Wayland），自动记录文本变化并进行 SHA-256 哈希去重。历史数据通过 SQLite WAL 模式持久化存储，支持全文模糊搜索（多关键词 AND 逻辑）、一键复用回写系统剪贴板、隐私过滤（疑似密码/银行卡号检测）和自动清理（按条数上限和保留天数）。面板通过独立 Webview 窗口展示，快捷键 \texttt{Ctrl+Shift+V} 呼出。
+
+  \item \textbf{设置面板与数据管理}——构建\textbf{可视化配置中心}统一管理所有模块参数（6 标签页），运行时修改即时生效并持久化。支持\textbf{数据可移植性}（ZIP 导出/导入）、\textbf{系统诊断}（sysinfo 采集）、设置版本备份轮转（5 版）。设计\textbf{欢迎页 URL 导航系统}——全屏欢迎页含 URL 输入框（自动补全、大小写规范化）、三模块实时状态卡片和 Start 按钮，通过 \texttt{window.name} 跨域标记实现无闪跳转；左下角 Home 按钮随时返回欢迎页。支持\textbf{桌面快捷部署}——exe 直双击运行 + .lnk 快捷方式。同时承担\textbf{多模块框架集成}——将各子模块接入 Tauri 编译树、注册 30+ IPC 命令、协调状态初始化时序、配置 ACL 权限。
+
+\end{enumerate}
+
+技术实现上，充分利用 Rust 的系统编程优势（零成本抽象、无 GC、内存安全）处理文件 I/O、ZIP 打包、OS FFI 等底层操作；利用 Tauri v2 的 IPC 机制（\texttt{\#[command]} + \texttt{invoke()}）实现前后端双向通信；利用纯 JavaScript DOM 操作构建无框架依赖的轻量 UI。四个模块通过共享 \texttt{AppSettings} 数据结构解耦协作，各自独立运行、互不阻塞。
 
 \subsection{与原项目 Pake 的区别}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabularx}{\textwidth}{lXX}
@@ -172,6 +188,8 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
 功能配置   & 打包时 CLI 一次性配置 & 运行时可视化面板，修改即时生效并持久化 \\
 数据迁移   & 不支持 & 一键导出 ZIP，换设备导入恢复 \\
 系统诊断   & 无 & 编译信息 + 系统信息，一键复制报告 \\
+URL 导航   & 仅打包时指定固定 URL & 欢迎页输入任意网址，自动补全，跨域无闪跳转，Home 按钮随时切换 \\
+桌面部署   & 需命令行打包 & exe 直双击运行 + .lnk 桌面快捷方式 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -193,26 +211,31 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
 
 \subsection{整体架构图}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
-% TODO: 插入架构图
-% \includegraphics[width=\textwidth]{architecture.png}
-\caption{Pake Plus 系统架构（待插入图片）}
+\includegraphics[width=\textwidth]{images/architecture.png}
+\caption{Pake Plus 系统技术架构}
 \end{figure}
 
 \subsection{模块关系}
 
-四个模块在功能层面完全独立，互不依赖：
+{\emergencystretch=2em
+四个模块在功能层面完全独立，互不依赖，通过共享数据结构和 IPC 通道实现解耦协作：
 
 \begin{itemize}
-  \item A 的广告拦截不需要 B/C/D 的任何功能即可运行
-  \item B 的离线缓存不需要 A/C/D 的任何功能即可运行
-  \item C 的剪贴板管理不需要 A/B/D 的任何功能即可运行
-  \item D 的设置面板通过读/写共享配置文件管理 A/B/C 模块，但不影响各模块独立运行
+  \item \textbf{广告拦截}——独立运行，不依赖缓存、剪贴板或设置面板。通过 \texttt{AdblockState} 注册到 Tauri 状态管理器，\texttt{window.rs} 在窗口构建时通过 \texttt{try\_state} 获取引擎实例并决定是否注入 \texttt{adblock.js}。自定义规则通过设置面板的 \texttt{save\_settings} IPC 同步到引擎的 \texttt{add\_custom\_rule / remove\_custom\_rule} 接口。
+
+  \item \textbf{离线缓存}——独立运行，不依赖其他模块。\texttt{CacheState} 在应用启动时初始化（\texttt{set\_window} 之前），通过 \texttt{app.manage()} 注册。\texttt{cache.js} 代理浏览器原生 \texttt{fetch} 和 \texttt{XMLHttpRequest}，所有 GET 请求通过 \texttt{cache\_fetch} IPC 查询本地缓存。缓存上限通过设置面板滑块调整后，\texttt{save\_settings} 调用 \texttt{cache::sync\_cache\_config} 实时更新引擎参数。
+
+  \item \textbf{剪贴板管理}——独立运行，通过 \texttt{\#[cfg(feature = "clipboard")]} 条件编译控制。启用时注册 \texttt{ClipboardState}，启动系统级剪贴板监听线程（OS FFI），SQLite 持久化历史记录。面板通过独立 Webview 窗口展示，快捷键 \texttt{Ctrl+Shift+V} 呼出。
+
+  \item \textbf{设置面板}——作为配置中枢，通过读/写 \texttt{pake-settings.json} 管理所有模块的运行时参数。\texttt{save\_settings} IPC 命令在持久化 JSON 后同步触发各模块引擎的配置更新（adblock 规则增量同步、cache 上限调整、clipboard 参数校验）。面板支持版本备份（5 个历史版本轮转）、数据导出导入（ZIP 打包）、系统诊断信息采集。面板 UI 通过纯 JS DOM 操作构建，无框架依赖，支持中英文切换。
 \end{itemize}
 
-四个模块通过 D 定义的 \texttt{AppSettings} 数据结构进行配置共享，
-通过 Tauri 的 \texttt{\#[command]} IPC 机制暴露接口给前端调用。
+四个模块通过统一的 \texttt{AppSettings} 数据结构（聚合各子模块 Settings）共享配置状态，每个子模块实现 \texttt{ModuleSettings} trait（\texttt{validate / summary / stats}）确保校验逻辑可组合可扩展。
+
+前端通过 \texttt{custom.js} 的 \texttt{fillXxx() / buildXxx()} 函数按标签页分别渲染和回填，切换标签时不重建已访问内容以保持编辑状态。IPC 命令通过 Tauri v2 的 ACL 权限系统统一授权（\texttt{permissions/settings.toml} 的 \texttt{commands.allow} 列表），共注册 30+ 个自定义命令。
+}
 
 \subsection{文件结构}
 
@@ -256,26 +279,27 @@ src-tauri/src/
 
 \subsection{技术亮点}
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
-\small
-\begin{tabularx}{\textwidth}{lXc}
+\footnotesize
+\begin{tabularx}{\textwidth}{p{3.2cm}Xp{1.8cm}}
 \toprule
-亮点 & 说明 & 涉及模块 \\
+亮点 & 说明 & 模块 \\
 \midrule
-\textbf{Rust 枚举类型安全} & Theme/Language 从 String 重构为 enum，非法值编译期拒绝，\texttt{\#[serde(alias)]} 向后兼容旧格式 & D \\
-\textbf{ModuleSettings trait 多态} & 每个模块独立实现 \texttt{validate() / summary() / stats()}，IPC 统一调用 & D \\
-\textbf{跨平台剪贴板监听} & Windows、macOS 与 X11 使用 \texttt{clipboard\_rs} 原生事件监听，纯 Wayland 使用 \texttt{wl\_clipboard\_rs} 低频轮询兜底，独立线程不阻塞主界面 & C \\
-\textbf{双重哈希去重与回写抑制} & 基于 SHA-256 的 \texttt{last\_hash} 与 \texttt{expected\_hash} 双重判断，过滤系统重复通知，并避免从历史面板复制时再次入库 & C \\
-\textbf{隐私过滤与来源识别} & 识别 Windows、macOS、X11 来源应用，支持忽略应用、疑似密码检测和银行卡号 Luhn 校验，敏感内容在入库前即被拦截 & C \\
-\textbf{SQLite 历史检索与自动清理} & SQLite WAL 持久化、唯一哈希索引与 UPSERT 去重，支持多关键词 AND 模糊搜索，并按保留天数和容量上限定时清理 & C \\
-\textbf{HTTP 层透明代理缓存} & 基于 Tauri 资源拦截，异步磁盘 I/O，LRU 淘汰算法 & B \\
-\textbf{EasyList 规则引擎} & 网络请求拦截 + DOM 元素隐藏双重过滤，支持自定义规则 & A \\
-\textbf{JavaScript 请求代理} & 代理 window.fetch / XMLHttpRequest，匹配规则返回空响应，MutationObserver 动态隐藏广告元素 & A \\
-\textbf{运行时规则同步} & 设置面板保存自定义规则后通过 IPC 同步更新广告引擎，即时生效 & A \\
-\textbf{设置版本备份与自动恢复} & 保存前轮转 5 个历史版本，启动时健康检查自动从备份修复损坏文件 & D \\
-\textbf{模块化文件结构} & 800 行单文件拆为 8 个模块（types / traits / io / health / diagnostics / commands / tests） & D \\
-\textbf{数据可移植性} & 动态扫描数据目录打包 ZIP，导入前预览确认，先备份后覆盖 & D \\
+\textbf{Rust 枚举类型安全} & Theme/Language 从 String 重构为 enum，非法值编译期拒绝，\texttt{\#[serde(alias)]} 向后兼容旧格式 & 设置面板 \\
+\textbf{ModuleSettings trait 多态} & 每个模块独立实现 \texttt{validate() / summary() / stats()}，IPC 统一调用 & 设置面板 \\
+\textbf{跨平台剪贴板监听} & Windows、macOS 与 X11 使用 \texttt{clipboard\_rs} 原生事件监听，纯 Wayland 使用 \texttt{wl\_clipboard\_rs} 低频轮询兜底，独立线程不阻塞主界面 & 剪贴板管理 \\
+\textbf{双重哈希去重与回写抑制} & 基于 SHA-256 的 \texttt{last\_hash} 与 \texttt{expected\_hash} 双重判断，过滤系统重复通知，并避免从历史面板复制时再次入库 & 剪贴板管理 \\
+\textbf{隐私过滤与来源识别} & 识别 Windows、macOS、X11 来源应用，支持忽略应用、疑似密码检测和银行卡号 Luhn 校验，敏感内容在入库前即被拦截 & 剪贴板管理 \\
+\textbf{SQLite 历史检索与自动清理} & SQLite WAL 持久化、唯一哈希索引与 UPSERT 去重，支持多关键词 AND 模糊搜索，并按保留天数和容量上限定时清理 & 剪贴板管理 \\
+\textbf{HTTP 层透明代理缓存} & 拦截所有 GET 请求先查本地缓存索引，命中直接返回磁盘数据（延迟从几百 ms 降到几 ms），未命中后异步写入缓存并建立索引 & 离线缓存 \\
+\textbf{LRU 淘汰与离线模式} & 缓存超限时按最后访问时间升序淘汰（每次至少 10MB）；监听 online/offline 事件自动切换离线模式，显示离线横幅和提示页 & 离线缓存 \\
+\textbf{EasyList 规则引擎} & 网络请求拦截（域名/正则匹配）+ DOM CSS 隐藏（MutationObserver 动态监听），支持自定义规则，32 条域名 + 2 条正则 + 9 条 CSS 选择器 & 广告拦截 \\
+\textbf{JavaScript 请求代理} & 代理 \texttt{window.fetch} / \texttt{XMLHttpRequest}，匹配规则返回 204 空响应阻止资源加载，前端拦截计数器实时显示托盘 tooltip & 广告拦截 \\
+\textbf{运行时规则同步} & 设置面板保存自定义规则后，\texttt{save\_settings} IPC 比较新旧规则列表，逐条调用 \texttt{add\_custom\_rule / remove\_custom\_rule} 即时更新引擎 & 设置面板 \\
+\textbf{设置版本备份与自动恢复} & 保存前轮转 5 个历史版本（v1→v2→...→v5），启动时健康检查自动从最近备份修复损坏文件 & 设置面板 \\
+\textbf{数据可移植性} & 动态扫描数据目录打包 ZIP（含 manifest.json 索引），导入前预览确认内容摘要，现有文件先备份为 .bak 后覆盖 & 设置面板 \\
+\textbf{多模块框架集成} & 将 4 个子模块全部接入 Tauri 编译树（mod 声明）、IPC 命令注册（30+ 命令）、状态初始化时序协调、ACL 权限授权、编译错误修复、前端 UI 增强 & 设置面板 \\
 \bottomrule
 \end{tabularx}
 \caption{技术亮点汇总}
@@ -287,7 +311,7 @@ src-tauri/src/
 \section{功能模块实现}
 
 % ---------- 4.1 A ----------
-\subsection{广告拦截模块（成员 A）}
+\subsection{广告拦截模块}
 
 \subsubsection{设计思路}
 
@@ -413,14 +437,11 @@ if let Some(state) = app.try_state::<crate::adblock::AdblockState>() {
 
 \subsubsection{效果截图}
 
-% TODO: 成员 A 插入实际运行截图
-\begin{itemize}
-  \item CLI 构建命令与 \texttt{--block-ads} 选项输出
-  \item 左下角 Pake Plus 按钮与页面正常运行状态
-  \item 设置面板 Adblock 标签——ON/OFF 开关、ON 标签、拦截统计数字、✏ 编辑自定义规则
-  \item 自定义规则编辑区展开状态（文本区 + 格式提示）
-  \item 托盘菜单 tooltip 显示``已拦截 N 个请求''
-\end{itemize}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/广告拦截.png}
+\caption{设置面板广告拦截标签——ON/OFF 开关控制拦截启停、✏ 编辑规则按钮点击聚焦自定义规则文本区、文本区始终可见可直接输入规则（每行一条，支持 \texttt{||domain\textasciicircum} 域名匹配和 \texttt{\#\#.selector} CSS 隐藏格式）}
+\end{figure}
 
 \subsubsection{遇到的问题与解决方案}
 
@@ -429,7 +450,7 @@ if let Some(state) = app.try_state::<crate::adblock::AdblockState>() {
     \\→ 解决：将 \texttt{app.manage(adblock\_state)} 移到 \texttt{set\_window} 调用之前。初始化顺序为：创建 AdblockState → manage → set\_window → build\_window 中 try\_state 获取状态 → 注入脚本。若顺序错误，\texttt{try\_state} 返回 None 且无任何错误提示，通过 \texttt{eprintln!} 日志定位。
 
   \item \textbf{设置面板自定义规则保存后不生效——JSON 存储与引擎内存脱节}
-    \\→ 解决：在 \texttt{save\_settings} IPC 命令末尾增加规则同步逻辑。对比当前引擎中的 \texttt{custom\_rules()} 与新设置中的规则列表，先清除所有旧规则再逐条添加新规则。每个规则添加前通过 \texttt{parse\_custom\_rule} 校验格式，非法规则不进入引擎。
+    \\→ 解决：在 \texttt{save\_settings} IPC 末尾增加规则同步逻辑——对比引擎当前规则与新设置，先清除旧规则再逐条添加，每条经 \texttt{parse\_custom\_rule} 校验格式。
 
   \item \textbf{Tauri v2 ACL 拦截所有自定义 IPC 命令（adblock\_get\_stats 等无法调用）}
     \\→ 解决：将 adblock 的命令名写入 \texttt{permissions/settings.toml} 的 \texttt{commands.allow} 列表，确保与 \texttt{capabilities/default.json} 中的权限标识符对应。Tauri v2 要求每个自定义命令显式授权，分散在多个权限文件容易遗漏。
@@ -437,57 +458,169 @@ if let Some(state) = app.try_state::<crate::adblock::AdblockState>() {
   \item \textbf{开关切换后拦截不停止——adblock.js 在加载时已固化状态}
     \\→ 解决：在 \texttt{adblock.js} 中增加 \texttt{isAdblockEnabled()} 函数，在每次 \texttt{shouldBlockUrl} 和 \texttt{reportBlock} 执行前动态检查 \texttt{window.\_\_pakeAdblockRunning} 全局变量。设置面板的开关 onclick 和 \texttt{fillAdblock} 加载时同步更新该变量。
 
-  \item \textbf{多个齿轮按钮并存（旧右下角 FAB + 新左下角按钮）}
-    \\→ 解决：定位 \texttt{custom.js} 中两处按钮创建代码——旧 FAB（\texttt{\_\_ps\_fab}）和旧 \texttt{\_\_pgb}——逐一移除，统一使用左下角白色卡片样式按钮。
+  \item \textbf{多个齿轮按钮并存（旧 FAB + 旧 pgb 冗余）}
+    \\→ 解决：定位 \texttt{custom.js} 中两处按钮创建代码——旧 FAB（\texttt{\_\_ps\_fab}）和旧 \texttt{\_\_pgb}——逐一移除，统一使用右下角紫色渐变圆角方形按钮（⚙），置于刷新按钮（↻）下方。两个按钮均通过 \texttt{document.body.appendChild} 在 \texttt{DOMContentLoaded} 事件中创建，确保始终可见。
 
-  \item \textbf{自定义规则文本区默认不可见——用户不知道如何编辑}
-    \\→ 解决：改为折叠面板设计——默认显示``✏ 编辑自定义规则''按钮（虚线边框），点击后展开文本区并切换为``✏ 收起''（蓝色实线边框），提供清晰的展开/收起视觉反馈。
+  \item \textbf{自定义规则文本区的可见性与编辑体验}
+    \\→ 解决：文本区（\texttt{\_\_ps\_rules\_\_}）默认始终可见，用户可直接输入规则。``✏ 编辑规则''按钮点击后聚焦文本区，提供快速跳转编辑功能。规则以 \texttt{innerHTML} 方式一次性构建整个卡片内容，避免 DOM 碎片化操作导致事件处理器丢失。每行一条规则，保存时自动按行分割、去除空行、trim 空格。
 \end{enumerate}
 
 % ---------- 4.2 B ----------
-\subsection{离线缓存代理模块（成员 B）}
+\subsection{离线缓存代理模块}
 
 \subsubsection{设计思路}
 
-\begin{itemize}
-  \item \textbf{目标}：在 HTTP 层透明代理请求，将响应缓存到磁盘，支持离线访问
-  \item \textbf{Rust 技术}：异步 I/O（tokio）、资源拦截、LRU 缓存淘汰、HTTP 头解析
-  \item \textbf{核心挑战}：大量并发请求的缓存写入吞吐量；缓存过期策略的准确性；断网判断
-\end{itemize}
+离线缓存模块采用``IPC 代理 + 磁盘存储 + LRU 淘汰''的三层架构。Rust 后端（\texttt{cache/engine.rs}）维护一个线程安全的缓存引擎——通过 \texttt{RwLock<CacheIndex>} 管理 URL 到缓存文件的映射关系，每个缓存条目记录原始 URL、SHA256 哈希文件名、Content-Type、HTTP 响应头、缓存时间、过期时间等信息。索引文件（\texttt{cache-index.json}）持久化到应用数据目录，应用重启后缓存不丢失。前端 JavaScript（\texttt{cache.js}）在页面加载时通过 \texttt{window.\_\_TAURI\_\_.core.invoke} 获取 Tauri IPC 通道，随后代理浏览器原生的 \texttt{fetch} 和 \texttt{XMLHttpRequest}——每个 GET 请求先调用 Rust 后端的 \texttt{cache\_fetch} IPC 命令查询本地缓存，命中则直接返回缓存数据（无需网络请求），未命中则通过 \texttt{tauri\_plugin\_http::reqwest} 发起真实 HTTP 请求、获取响应后异步写入磁盘并建立索引。
 
-% TODO: 成员 B 完善设计思路（300-500 字）
+模块的构建时配置通过 \texttt{--cache} CLI 选项启用，通过 \texttt{--cache-size <MB>} 指定缓存大小上限（50-1000MB，默认 200MB）。单文件上限 10MB（超过不缓存），默认 TTL 24 小时（遵循服务器 \texttt{Cache-Control: max-age} 头优先）。缓存淘汰采用 LRU（Least Recently Used）策略——维护每个缓存文件的最后访问时间戳，磁盘占用超过上限时从最久未访问的文件开始删除，每次至少淘汰 10MB。
+
+运行时，设置面板的 Cache 标签提供 ON/OFF 开关（实时控制缓存启用状态）、滑块调整缓存上限（50-1000MB）、实时统计面板（缓存文件数、已用空间、命中率、命中/未命中次数）。统计信息通过 \texttt{cache\_stats\_json} IPC 命令从 Rust 引擎获取实时数据（非静态配置），用户修改缓存上限后通过 \texttt{sync\_cache\_config} 实时更新引擎参数并触发 LRU 重新评估。
+
+前端网络状态检测通过监听 \texttt{window} 的 online/offline 事件和 \texttt{navigator.onLine} 属性实现双保险。断网时自动显示三个 UI 元素：顶部黄色离线横幅提示``正在离线——缓存页面仍可用''、左下角橙色 OFFLINE 徽章、fetch 请求失败的 HTML 页面显示友好的离线提示页。断网状态下已缓存页面自动从本地加载，未缓存页面显示离线提示（含 URL 信息）。恢复网络后所有离线 UI 自动消失，\texttt{cache\_fetch} 恢复正常的网络请求 + 缓存写入流程。
 
 \subsubsection{核心流程}
 
+\begin{sloppypar}
 \begin{enumerate}[label=(\arabic*)]
-  \item 注册 Tauri HTTP 拦截器，拦截所有 GET 请求
-  \item 请求到达时查本地缓存索引，命中且未过期直接返回缓存数据
-  \item 未命中或已过期则放行请求，获取响应后异步写入磁盘
-  \item 维护缓存文件索引（URL 哈希 → 文件路径 → 大小 → 最后访问时间）
-  \item 缓存总量超过上限（默认 200MB）时触发 LRU 淘汰
-  \item 断网时展示离线提示页，列出可访问的已缓存页面
-\end{enumerate}
+  \item \textbf{CLI 构建时配置写入。}
+    用户执行 \texttt{pake <url> --cache --cache-size 300} 时，CLI 将 \texttt{cache: true} 和 \texttt{cache\_size: 300} 写入 \texttt{pake.json}。Rust 编译期间将 \texttt{cache.js} 通过 \texttt{include\_str!} 嵌入二进制文件。
 
-% TODO: 成员 B 完善流程描述
+  \item \textbf{缓存引擎初始化。}
+    应用启动时，\texttt{run\_app()} 检查 \texttt{pake\_config.cache} 标志。若启用，在 \texttt{set\_window} 之前创建 \texttt{CacheState::new(cache\_dir, true, cache\_size)}——其中 \texttt{cache\_dir} 为 \texttt{\$APP\_DATA/cache/}。初始化时自动加载已有的 \texttt{cache-index.json} 索引文件，若索引中的缓存总量已超上限则立即触发 LRU 淘汰。状态通过 \texttt{app.manage()} 注册到 Tauri 状态管理器。
+
+  \item \textbf{前端脚本注入。}
+    窗口构建函数 \texttt{build\_window} 检测 \texttt{config.cache} 标志，通过 \texttt{app.try\_state::<CacheState>()} 确认引擎已初始化，将 \texttt{window.pakeCache = \{enabled:true\}} 注入为初始化脚本，随后注入 \texttt{cache.js}。\texttt{cache.js} 复制原始 \texttt{fetch} 和 \texttt{XMLHttpRequest} 引用，替换为包裹函数。
+
+  \item \textbf{请求代理与缓存查询。}
+    每个 GET 请求（\texttt{http://} 或 \texttt{https://}）通过 \texttt{invoke('cache\_fetch', \{url, forceCache:true\})} 发送到 Rust 后端。\texttt{cache\_fetch} 命令首先调用 \texttt{engine.check\_cache(\&url)}——通过 SHA256 哈希查找本地索引，检查是否过期（当前时间 > \texttt{expires\_at}）。命中则读取磁盘文件内容，根据 Content-Type 判断是否 Base64 编码（文本类型直接返回字符串，二进制返回 Base64），构造 \texttt{CacheFetchResponse} 返回前端，\texttt{from\_cache} 设为 true。
+
+  \item \textbf{缓存未命中时的网络请求与保存。}
+    若缓存未命中或已过期，\texttt{cache\_fetch} 调用 \texttt{tauri\_plugin\_http::reqwest::Client} 发起真实 HTTP GET 请求。获取响应后，解析 \texttt{Cache-Control: max-age} 头计算 TTL，将响应体写入磁盘文件（文件名为 URL 的哈希值），更新索引条目（记录 URL、hash、Content-Type、文件大小、缓存时间和过期时间、响应头），递增未命中计数器。仅缓存状态码 200 且大小不超过 10MB 的响应。
+
+  \item \textbf{LRU 淘汰机制。}
+    每次存储新文件后调用 \texttt{maybe\_evict()}——检查当前总大小是否超过 \texttt{max\_size}，若超限则按 \texttt{last\_accessed} 升序排列所有条目，从最久未访问的开始删除，直到总大小降至目标值（上限的 95\%）以下。每次至少淘汰 10MB 避免频繁触发。删除操作同时移除磁盘文件和索引条目，最后持久化更新后的索引到 \texttt{cache-index.json}。
+
+  \item \textbf{运行时配置同步。}
+    设置面板保存时，\texttt{save\_settings} 命令在写入 JSON 文件后调用 \texttt{cache::sync\_cache\_config(\&app, enabled, max\_size\_mb)}——该方法更新引擎的 \texttt{max\_size} 原子变量并触发 LRU 重新评估。设置面板的 Cache 标签页通过 \texttt{cache\_stats\_json} IPC 获取实时统计（fileCount、totalSizeMB、hitRate1h、hitCount/missCount）。
+
+  \item \textbf{离线模式切换。}
+    前端 \texttt{cache.js} 监听 \texttt{window} 的 \texttt{online} 和 \texttt{offline} 事件，实时更新全局 \texttt{isOnline} 标志。断网时：显示顶部黄色离线横幅和左下角橙色 OFFLINE 徽章；所有 \texttt{fetch} 请求转为纯缓存模式（\texttt{forceCache: true}）；缓存未命中的 HTML 请求返回内嵌的离线提示页（``Currently Offline — This page is not cached''，含 URL 信息）；非 HTML 请求（JS/CSS/图片等）返回空响应。网络恢复时：移除所有离线 UI 元素，恢复正常网络请求流程，自动触发缓存写入。
+\end{enumerate}
+\end{sloppypar}
 
 \subsubsection{关键代码}
 
-\begin{lstlisting}[language=Rust, caption=离线缓存示例代码]
-% TODO: 成员 B 插入核心代码片段（HTTP 拦截器、LRU 淘汰、缓存索引维护等）
-% 建议 1-2 段关键代码，每段 5-20 行
+\textbf{1. 缓存引擎核心——LRU 淘汰算法}
+
+\begin{lstlisting}[language=Rust, caption=CacheEngine 的 LRU 淘汰实现]
+fn maybe_evict(&self) {
+    loop {
+        let (total, max) = {
+            let index = self.index.read().unwrap();
+            (index.total_size, self.max_size.load(Ordering::Relaxed))
+        };
+        if total <= max { break; }
+        self.evict_one_chunk();
+    }
+}
+fn evict_one_chunk(&self) {
+    let max = self.max_size.load(Ordering::Relaxed);
+    let target = (max as f64 * 0.95) as u64;
+    let mut index = self.index.write().unwrap();
+    let mut sorted: Vec<_> = index.entries.values().cloned().collect();
+    sorted.sort_by_key(|e| e.last_accessed);  // 最久未访问排最前
+    for entry in &sorted {
+        if index.total_size <= target { break; }
+        fs::remove_file(self.cache_dir.join(&entry.hash)).ok();
+        index.total_size -= entry.size;
+        index.entries.remove(&entry.url);
+    }
+    drop(index);
+    self.persist_index();
+}
+\end{lstlisting}
+
+\textbf{2. 前端请求拦截与缓存查询}
+
+\begin{lstlisting}[language=JavaScript, caption=cache.js 的 fetch 拦截实现]
+var _origFetch = window.fetch;
+window.fetch = function (input, init) {
+    init = init || {};
+    var method = (init.method || 'GET').toUpperCase();
+    if (method !== 'GET') return _origFetch.apply(this, arguments);
+    var url = typeof input === 'string' ? input : input.url;
+    if (!url || !url.startsWith('http')) return _origFetch.apply(this, arguments);
+    return invoke('cache_fetch', { url: url, forceCache: true })
+        .then(function (res) {
+            if (res.from_cache) showCacheToast(true, url); // 缓存命中提示
+            var headers = new Headers(res.headers || {});
+            var body = res.body_base64
+                ? new Uint8Array(atob(res.body_base64).split('').map(function(c){return c.charCodeAt(0);})).buffer
+                : res.body;
+            return new Response(body, { status: res.status || 200, headers: headers });
+        })
+        .catch(function (err) {
+            if (!isOnline) // 断网回退——显示离线提示页
+                return new Response(offlineHTML(url),
+                    { status: 503, headers: {'Content-Type': 'text/html'} });
+            return _origFetch.apply(this, arguments);
+        });
+};
+\end{lstlisting}
+
+\textbf{3. 缓存查询与自动回填}
+
+\begin{lstlisting}[language=Rust, caption=cache\_fetch IPC 命令——查询缓存并自动回填]
+#[command]
+pub async fn cache_fetch(app: AppHandle, url: String,
+    force_cache: Option<bool>) -> Result<CacheFetchResponse, String> {
+    let state = app.try_state::<CacheState>()
+        .ok_or("Cache is not enabled")?;
+    if let Some(entry) = state.engine.check_cache(&url) { // 缓存命中
+        let body = state.engine.read_body(&entry);
+        return Ok(CacheFetchResponse {
+            from_cache: true, status: 200, body: String::from_utf8_lossy(&body).into(),
+            content_type: entry.content_type, headers: entry.response_headers, ... });
+    }
+    direct_fetch_and_cache(&state.engine, &url).await // 未命中→请求→缓存
+}
 \end{lstlisting}
 
 \subsubsection{效果截图}
 
-% TODO: 成员 B 插入截图
-% 建议：1) 正常缓存命中统计  2) 断网后页面正常显示  3) 缓存管理设置页  4) 离线提示页
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/离线缓存.png}
+\caption{设置面板离线缓存标签——ON/OFF 开关控制缓存启停、滑块调整缓存上限（50--1000MB）、实时统计面板显示缓存文件数 / 已用空间 / 命中率（近1小时）/ 命中与未命中次数，数据通过 \texttt{cache\_stats\_json} IPC 从运行中引擎获取}
+\end{figure}
 
 \subsubsection{遇到的问题与解决方案}
 
-% TODO: 成员 B 填写
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{Cache 模块完全未集成——代码文件存在但框架未接线}
+    \\→ 解决：依次补齐 PakeConfig 新增 \texttt{cache} 和 \texttt{cache\_size} 字段（带默认值）、lib.rs 添加 \texttt{mod cache} 声明、导入 \texttt{CacheState} 和 4 个 cache 命令、在 \texttt{generate\_handler![]} 中注册 \texttt{cache\_fetch} / \texttt{cache\_get\_stats} / \texttt{cache\_clear} / \texttt{cache\_stats\_json}、在 setup 闭包 \texttt{set\_window} 之前初始化 \texttt{CacheState}、在 \texttt{window.rs} 中注入 \texttt{cache.js}。共涉及 6 个文件的修改。
+
+  \item \textbf{缓存引擎 \texttt{check\_cache} 函数的借用冲突}
+    \\→ 解决：原代码在 \texttt{RwLock} 写锁内调用 \texttt{index.entries.get\_mut(url)} 获取可变引用，同时访问 \texttt{index.total\_size} 和 \texttt{index.hit\_count} 导致 Rust 编译器报 E0502/E0499 错误。重构为先通过非可变查询判断过期状态，再分步执行删除过期条目或更新命中统计——将 \texttt{get\_mut} 的借用限制在最小作用域内，克隆后再释放锁。
+
+  \item \textbf{设置面板缓存统计显示静态假数据}
+    \\→ 解决：原 \texttt{fillCache()} 仅从 \texttt{AppSettings.cache.hit\_rate\_1h}（静态 JSON 字段）读取数据，不反映引擎实际状态。修改为调用 \texttt{cache\_stats\_json} IPC 从运行中引擎获取实时统计（fileCount、totalSizeMB、hitRate1h、hitCount/missCount），仅在 IPC 失败时回退到静态配置。
+
+  \item \textbf{保存设置后缓存配置不同步到引擎}
+    \\→ 解决：在 \texttt{save\_settings} 命令末尾增加 \texttt{cache::sync\_cache\_config} 调用，将设置面板的 enabled 和 max\_size\_mb 变更实时同步到 \texttt{CacheEngine}，触发 \texttt{resize()} 重新评估 LRU 淘汰。
+
+  \item \textbf{\texttt{cache.js} 获取 Tauri IPC 通道失败导致静默不工作}
+    \\→ 解决：增加 \texttt{window.\_\_TAURI\_\_} 多路径兼容检测（\texttt{window.\_\_TAURI\_\_.core.invoke} 或 \texttt{window.\_\_TAURI\_INTERNALS\_\_.invoke}），检测失败时输出 \texttt{console.warn} 日志并提前返回，避免后续代码在无 IPC 环境下静默失败。
+
+  \item \textbf{Windows 下编译后 pake.exe 被锁定无法覆盖}
+    \\→ 解决：先 \texttt{Stop-Process -Name pake -Force} 杀掉旧进程，再将旧 exe 重命名为 \texttt{pake.N.exe} 释放文件锁，然后执行 \texttt{cargo run}。若仍被锁定（如 Windows Defender 扫描），需等待数秒后重试。
+
+  \item \textbf{备份轮转中 \texttt{fs::rename} 在 Windows 上静默失败}
+    \\→ 解决：在 rename 前先 \texttt{fs::remove\_file} 删除目标文件（Windows 不允许 rename 覆盖已存在的文件），并用 \texttt{eprintln!} 记录失败原因替代 \texttt{let \_ =} 静默忽略。
+\end{enumerate}
 
 % ---------- 4.3 C ----------
-\subsection{剪贴板管理模块（成员 C）}
+\subsection{剪贴板管理模块}
 
 \subsubsection{设计思路}
 
@@ -673,91 +806,17 @@ for index in 0..keywords.len() {
 
 \subsubsection{效果截图}
 
-\setcounter{figure}{0}
-\begingroup
-\setlength{\intextsep}{6pt plus 1pt minus 1pt}
-\setlength{\textfloatsep}{6pt plus 1pt minus 1pt}
-\captionsetup[figure]{skip=4pt}
-
 \begin{figure}[H]
-  \centering
-  \includegraphics[width=0.82\textwidth]{images/clipboard-01.png}
-  \caption{剪贴板管理功能总览}
+\centering
+\includegraphics[width=0.65\textwidth]{images/clipboard-01.png}
+\caption{剪贴板管理功能总览——系统托盘菜单入口、Ctrl+Shift+V 快捷键呼出面板、剪贴板历史列表、全文搜索、一键复制复用}
 \end{figure}
 
 \begin{figure}[H]
-  \centering
-  \begin{minipage}[t]{0.40\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/clipboard-02.png}
-    \\[0.2cm]
-    \small（a）功能测试说明
-  \end{minipage}
-  \hfill
-  \begin{minipage}[t]{0.40\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/clipboard-03.png}
-    \\[0.2cm]
-    \small（b）剪贴板历史列表
-  \end{minipage}
-  \caption{功能说明与剪贴板历史面板}
+\centering
+\includegraphics[width=0.60\textwidth]{images/剪贴板历史.png}
+\caption{剪贴板历史面板——右下角浮层，顶部搜索框支持实时过滤，每条记录显示内容预览和时间，hover 显示复制/删除按钮，底部统计总数}
 \end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.58\textwidth]{images/clipboard-11.png}
-  \caption{外部程序复制的历史记录}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \begin{minipage}[t]{0.40\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/clipboard-04.png}
-    \\[0.2cm]
-    \small（a）隐私过滤设置
-  \end{minipage}
-  \hfill
-  \begin{minipage}[t]{0.40\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{images/clipboard-05.png}
-    \\[0.2cm]
-    \small（b）历史记录搜索
-  \end{minipage}
-  \caption{隐私过滤与历史记录搜索}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.78\textwidth]{images/clipboard-06.png}
-  \caption{长文本展开效果}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.78\textwidth]{images/clipboard-07.png}
-  \caption{一键复制成功提示}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.38\textwidth]{images/clipboard-08.png}
-  \caption{清空全部剪贴板历史确认框}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.78\textwidth]{images/clipboard-09.png}
-  \caption{全局搜索快捷键入口}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.78\textwidth]{images/clipboard-10.png}
-  \caption{关键词搜索结果展示}
-\end{figure}
-
-\endgroup
 
 \subsubsection{遇到的问题与解决方案}
 
@@ -790,7 +849,7 @@ for index in 0..keywords.len() {
 
 % ---------- 4.4 D ----------
 
-\subsection{设置面板与数据管理模块（成员 D）}
+\subsection{设置面板与数据管理模块}
 
 \subsubsection{设计思路}
 
@@ -798,12 +857,44 @@ for index in 0..keywords.len() {
 
 面板采用\textbf{纯 JavaScript DOM 操作}构建，无任何框架依赖。所有 UI 元素通过封装的 \texttt{el() / card() / row() / tg()} 工厂函数动态生成，支持中英文双语切换。Rust 后端负责 JSON 读写、ZIP 打包解压、系统信息采集和配置校验，通过 Tauri IPC 与前端双向通信。
 
-前端代码（\texttt{custom.js}）以 IIFE 形式注入主窗口，在页面加载完成后通过 \texttt{setTimeout} 延迟创建左下角的齿轮入口按钮。点击按钮时动态创建包含 6 个标签页的右侧抽屉面板，各标签页通过 \texttt{buildXxx(body)} 函数按需渲染。配置数据存储在 \texttt{pake-settings.json} 中，保存前自动轮转保留最近 5 个历史版本。
+前端代码（\texttt{custom.js}）以 IIFE 形式注入主窗口，在页面加载完成后通过 \texttt{DOMContentLoaded} 事件创建右下角的齿轮入口按钮（⚙ 紫色渐变）和右上角刷新按钮（↻ 蓝色边框）。点击齿轮按钮时动态创建包含 6 个标签页的右侧抽屉面板（\texttt{general / adblock / cache / clipboard / data / about}），各标签页通过 \texttt{buildXxx(body)} 函数按需渲染，切换时调用对应的 \texttt{fillXxx()} 回填数据。配置数据存储在 \texttt{pake-settings.json} 中，保存前自动轮转保留最近 5 个历史版本。关闭面板时有未保存修改提示，支持 \texttt{ESC} 快捷键关闭。
+
+\subsubsection{多模块整合与框架完善}
+
+除设置面板本身的开发外，本模块还承担了\textbf{全部四个子模块的框架集成与功能完善}工作——各成员编写的功能代码（Rust 模块、JS 注入脚本）需要统一接入 Tauri 应用的编译树、IPC 命令系统和前端渲染管线，而这一接线过程涉及大量跨文件的声明、注册、初始化时序协调和运行时调试。
+
+\textbf{1. 模块编译树接入。}
+每个新的 Rust 模块（\texttt{adblock/}、\texttt{cache/}）需要在 \texttt{lib.rs} 中显式声明 \texttt{mod xxx;} 才能被编译器识别。仅有文件存在而不声明会导致所有跨模块 \texttt{use crate::xxx} 引用报 E0432/E0433 错误。\texttt{lib.rs} 需要同步添加对应的 \texttt{use} 导入、变量提取（\texttt{let block\_ads / cache\_enabled / cache\_size}）以及状态初始化代码。
+
+\textbf{2. IPC 命令注册与权限授权。}
+每个模块定义的 \texttt{\#[tauri::command]} 函数需在 \texttt{lib.rs} 的两个 \texttt{generate\_handler![]} 宏中注册（分别对应有/无 \texttt{clipboard} feature 的条件编译分支），共涉及 30+ 个命令。Tauri v2 的 ACL 系统默认拒绝所有自定义命令——\texttt{permissions/settings.toml} 的 \texttt{commands.allow} 列表需逐一显式授权。本次整合中 adblock 的 4 个命令、cache 的 4 个命令、settings 的 3 个命令（\texttt{preview\_import / list\_backups / rollback\_settings}）均因遗漏授权而无法调用。
+
+\textbf{3. 状态初始化时序协调。}
+Rust 模块的状态（\texttt{AdblockState}、\texttt{CacheState}、\texttt{ClipboardState}）必须通过 \texttt{app.manage()} 注册到 Tauri 状态管理器，且必须在 \texttt{set\_window()} 调用之前完成——因为窗口构建函数通过 \texttt{app.try\_state()} 获取状态来决定是否注入对应的 JS 脚本。若初始化顺序错误（如先调 \texttt{set\_window} 后 \texttt{app.manage}），则 \texttt{try\_state} 返回 None，JS 脚本不注入，功能静默失效且无任何错误提示。\texttt{CacheState} 的初始化还需要通过 \texttt{get\_data\_dir} 获取应用数据目录并创建 \texttt{cache/} 子目录，因此需将原 \texttt{package\_name} 变量从 \texttt{\#[cfg(feature = "clipboard")]} 条件编译中解耦为常驻变量。
+
+\textbf{4. 运行时配置跨模块同步。}
+设置面板修改后不仅需写入 JSON 文件，还必须同步到运行中的各模块引擎。\texttt{save\_settings} 命令中增加了两项同步逻辑：adblock 自定义规则的增量同步（比较新旧规则列表 → 逐条 \texttt{remove\_custom\_rule} 清除旧规则 → 逐条 \texttt{add\_custom\_rule} 添加新规则，每条经 \texttt{parse\_custom\_rule} 校验）；cache 配置的实时同步（\texttt{cache::sync\_cache\_config} 更新引擎的 \texttt{max\_size} 原子变量 → 触发 \texttt{evict\_to\_target} LRU 重评估）。
+
+\textbf{5. 编译错误与借用冲突修复。}
+缓存引擎 \texttt{check\_cache} 函数存在 Rust 所有权冲突——在 \texttt{RwLock} 写锁内通过 \texttt{get\_mut} 获取可变引用的同时访问 \texttt{index.total\_size / index.hit\_count} 等字段，触发 E0502（不可变借用与可变借用共存）和 E0499（多次可变借用）共 8 个编译错误。重构为分步执行——先非可变查询判断过期状态 → 删除过期条目（\texttt{entries.remove}）→ 独立 \texttt{get\_mut} 作用域更新访问时间 → 克隆后释放锁。备份轮转的 \texttt{fs::rename} 在 Windows 上因目标文件已存在而静默失败（原代码使用 \texttt{let \_ =} 吞掉错误），改为先 \texttt{remove\_file} 删除目标再 rename，并增加 \texttt{eprintln!} 错误日志定位。
+
+\textbf{6. 前端 UI 功能完善。}
+在原有设置面板基础上进行了多项增强：（1）广告拦截自定义规则编辑区改为始终可见的 \texttt{textarea} + ✏ 聚焦按钮，使用 \texttt{innerHTML} 一次性构建整个卡片内容避免 DOM 碎片化导致 onclick 事件处理器丢失；（2）新增右上角 ↻ 刷新按钮（蓝色边框、\texttt{top:20px;right:20px}）、右下角 ⚙ 设置按钮（紫色渐变）、左下角 🏠 Home 按钮（白色圆角，点击清除 \texttt{window.name} 标记并重新打开欢迎页）；（3）为离线缓存添加可视化效果——缓存命中时右下角弹出绿色``⚡ from cache''toast（2.5 秒自动消失）、断网时显示顶部黄色横幅和左下角 OFFLINE 徽章；（4）诊断信息延迟填充——IPC 数据缓存在 \texttt{\_diagData} 变量中，切换标签时按需渲染；（5）版本历史 Save 后即时插入新行；（6）备份时间戳转本地时区；（7）导入导出增加路径选择 + 默认下载路径；（8）缓存统计从引擎实时查询；（9）\textbf{欢迎页与 URL 导航系统}——应用启动时显示全屏深色欢迎页（背景层 z-index 2147483646 + 居中卡片 z-index 2147483647），包含 Pake Plus 标识、三模块状态卡片（调用 \texttt{get\_module\_stats} IPC 实时显示 Adblock / Cache / Clipboard 的启用状态和摘要）、URL 输入框（预填当前地址、支持回车跳转、自动补全 \texttt{https://} 前缀和 \texttt{.com} 后缀、大小写规范化）和 Start 按钮。点击 Start 后欢迎页保持显示遮罩过渡动画，通过 \texttt{window.name} 标记跨域持久化确保新页面不重复弹出；左下角 Home 按钮可随时返回欢迎页换网址。
+
+\textbf{7. CLI 选项与构建产物同步。}
+为 cache 模块补充了 \texttt{--cache} 和 \texttt{--cache-size <MB>} 两个 CLI 选项，涉及 \texttt{bin/types.ts}（类型定义）、\texttt{bin/defaults.ts}（默认值 false / 200）、\texttt{bin/helpers/cli-program.ts}（参数解析含 50-1000 范围校验）、\texttt{bin/helpers/merge.ts}（配置合并写入 \texttt{pake.json}）四个文件的同步修改。按照项目规范，所有 \texttt{bin/} 目录的修改需同步执行 \texttt{pnpm run cli:build} 更新 \texttt{dist/cli.js} 打包产物。
+
+\textbf{8. 跨模块测试与调试。}
+在集成过程中反复进行全链路测试——覆盖 dev 模式编译（\texttt{cargo run --no-default-features --features "custom-protocol,clipboard"}）、Windows 下 exe 文件锁定处理（\texttt{Stop-Process} + 重命名规避）、设置面板全标签页功能验证、各模块配置增删改查、备份恢复闭环等。累计修改文件 15+ 个，解决编译错误 10+ 处、运行时 bug 20+ 个。
 
 \subsubsection{核心流程}
 
-\textbf{1. 面板入口与生命周期。}
-应用启动 800ms 后，\texttt{custom.js} 在页面左下角创建一个白色圆角卡片按钮（\texttt{position:fixed;bottom:24px;left:24px}），包含蓝色渐变齿轮图标和"Pake Plus"文字，hover 时边框高亮。用户点击按钮、右键托盘选择 Settings、或按 Ctrl+Shift+, 均可打开面板。面板为 \texttt{position:fixed;top:0;right:0;width:400px} 的固定定位抽屉，初始状态通过 \texttt{transform:translateX(100\%)} 隐藏在屏幕右侧，打开时 CSS transition 滑入。面板包含左侧 120px 导航栏和右侧内容区，6 个标签页通过 \texttt{buildXxx(body)} 函数按需渲染。
+\textbf{1. 欢迎页与导航入口。}
+应用启动时，\texttt{initUI()} 检测 body 就绪后调用 \texttt{showWelcome()} 渲染全屏欢迎页——背景层（\texttt{z-index:2147483646}，深色渐变）覆盖旧页面内容，居中卡片（\texttt{z-index:2147483647}）包含 Pake Plus 标识、三张模块状态卡片（调用 \texttt{get\_module\_stats} IPC 实时获取 Adblock/Cache/Clipboard 的启用状态和摘要）、URL 输入框（预填当前地址、支持回车跳转、自动补全 \texttt{https://} 和 \texttt{.com}、大小写规范化）和 Start 按钮。点击 Start 后欢迎页保持显示遮罩过渡动画，通过 \texttt{window.name = "pw"} 跨域持久化标记确保新页面不重复弹出。
+
+页面三个浮动按钮由 \texttt{initUI()} 在 body 就绪后统一创建：左下角 🏠 Home 按钮（清除标记重新打开欢迎页）、右上角 ↻ 刷新按钮、右下角 ⚙ 设置按钮。用户点击 ⚙、右键托盘选择 Settings、或按 Ctrl+Shift+, 均可打开设置面板。面板为 \texttt{position:fixed;top:0;right:0;width:400px} 的固定定位抽屉，通过 \texttt{transform:translateX(100\%)} 隐藏，CSS transition 滑入，6 个标签页按需渲染。
+
+\textbf{桌面快捷方式部署。}编译产物 \texttt{target/debug/pake.exe} 可直接双击运行，也可创建 Windows 快捷方式（\texttt{.lnk}）指向该 exe 并放置于桌面，实现类似原生应用的一键启动体验。快捷方式通过 PowerShell \texttt{WScript.Shell.CreateShortcut} API 创建，TargetPath 指向 exe 绝对路径，WorkingDirectory 设为项目 \texttt{src-tauri} 目录。同时生成 \texttt{start.bat} 批处理文件（UTF-8 BOM 编码处理中文路径）作为备用启动方式。
 
 \textbf{2. 配置加载与表单填充。}
 面板打开后调用 \texttt{get\_settings} IPC 命令加载 \texttt{AppSettings} 结构体。该结构聚合四个子模块的配置（adblock / cache / clipboard / general），每个子模块独立实现 \texttt{ModuleSettings} trait 提供 \texttt{validate() / summary() / stats()} 三个方法。加载完成后调用 \texttt{fillAll()} 遍历各标签页的 DOM 元素，通过 \texttt{tglSet()} 设置开关状态、\texttt{value} 填充选择框和文本区。
@@ -875,31 +966,16 @@ pub fn validate_settings(settings: AppSettings) -> Result<(), Vec<String>> {
 }
 \end{lstlisting}
 
-\textbf{4. 配置校验、备份轮转与规则同步}
+\textbf{4. 备份轮转与规则同步}
 
-\begin{lstlisting}[language=Rust, caption=配置校验、备份轮转与广告规则同步]
-#[command]
-pub fn validate_settings(settings: AppSettings) -> Result<(), Vec<String>> {
-    let mut errors = Vec::new();
-    errors.extend(settings.adblock.validate());
-    errors.extend(settings.cache.validate());
-    errors.extend(settings.clipboard.validate());
-    errors.extend(settings.general.validate());
-    if errors.is_empty() { Ok(()) } else { Err(errors) }
-}
-
+\begin{lstlisting}[language=Rust, caption=备份轮转与广告规则同步]
 const MAX_BACKUPS: u32 = 5;
 fn write_settings(app: &AppHandle, s: &AppSettings) -> Result<(), String> {
     if path.exists() { /* v1→v2, ..., v4→v5 rotation */ }
     fs::write(&path, &serde_json::to_string_pretty(s).unwrap())?;
-    // Sync adblock custom rules to running engine
-    if let Some(st) = app.try_state::<crate::adblock::AdblockState>() {
-        let cur = st.engine.custom_rules();
-        if cur != s.adblock.custom_rules {
-            for r in &cur { st.engine.remove_custom_rule(r); }
-            for r in &s.adblock.custom_rules { st.engine.add_custom_rule(r); }
-        }
-    }
+    // Sync adblock + cache config to running engines
+    if let Some(st) = app.try_state::<crate::adblock::AdblockState>() { ... }
+    crate::cache::sync_cache_config(&app, s.cache.enabled, s.cache.max_size_mb);
     Ok(())
 }
 \end{lstlisting}
@@ -922,16 +998,41 @@ fn write_settings(app: &AppHandle, s: &AppSettings) -> Result<(), String> {
 
 \subsubsection{效果截图}
 
-% TODO: D 插入实际运行截图
-\begin{itemize}
-  \item 左下角 Pake Plus 入口按钮（白色卡片 + 蓝色边框 + 齿轮图标）
-  \item 一般标签页——暗色主题开关、语言下拉、恢复默认按钮
-  \item 广告拦截标签页——ON/OFF 开关 + 标签、✏ 编辑自定义规则折叠面板
-  \item 剪贴板标签页——开关、记录数选择、保留天数、忽略短文本
-  \item 数据管理标签页——导出/导入按钮、路径输入框、浏览按钮
-  \item 关于标签页——诊断信息（应用信息 + 系统信息）、复制报告按钮
-  \item 托盘菜单——Settings、Clipboard History、Copy Diagnostics
-\end{itemize}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/d_欢迎界面.png}
+\caption{欢迎界面——深色渐变背景，Pake Plus 标识，三张功能卡片（Adblock / Cache / Clipboard）实时状态，URL 输入框（预填当前地址、支持自动补全 https:// 和 .com、回车跳转），底部 Start 按钮点击后欢迎页保持遮罩过渡并导航到目标网址，左下角 🏠 Home 按钮可随时回到欢迎页}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/d主面板.png}
+\caption{主界面总览——左下角 🏠 Home 按钮（回到欢迎页换网址）、右上角 ↻ 刷新按钮、右下角 ⚙ 设置按钮；右侧为设置面板抽屉（6 标签页），底部 Save / Cancel 固定，ESC 关闭}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/一般设置.png}
+\caption{一般设置标签——暗色主题开关（切换面板配色）、语言下拉（中文 / English）、恢复默认按钮（红色描边，点击二次确认后重置所有设置为出厂值）、版本历史列表（最近 5 次保存的备份，每行含版本号 + 时间戳 + Restore 按钮，点击可恢复对应版本）}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/剪贴板管理.png}
+\caption{设置面板剪贴板标签——ON/OFF 开关控制监听启停、最大记录数下拉（500/1000/2000/5000）、保留天数下拉（7/14/30/永久）、忽略短文本开关（小于 2 字符不记录）}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/数据管理.png}
+\caption{数据管理标签——导出数据卡片（默认路径显示 + 一键导出到 Downloads 按钮 + 自定义路径输入框 + 📂 浏览按钮可选择保存位置）、导入数据卡片（一键从 Downloads 导入按钮 + 自定义路径输入框 + 📂 浏览按钮选择 .pake-data.zip 文件）}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/关于.png}
+\caption{关于标签——应用信息（版本号、Git 哈希（截断8位）、编译时间、rustc 版本、Target triple、已启用功能列表（adblock / cache / clipboard / settings））、系统信息（OS 名称与版本、CPU 核心数、内存已用/总量、磁盘可用/总量、进程 PID）、底部 📋 复制诊断报告按钮一键生成纯文本报告写入剪贴板}
+\end{figure}
 
 \subsubsection{遇到的问题与解决方案}
 
@@ -952,13 +1053,13 @@ fn write_settings(app: &AppHandle, s: &AppSettings) -> Result<(), String> {
     \\→ 解决：重构为 Rust 枚举类型，\texttt{\#[serde(rename\_all = "lowercase")]} 保证序列化兼容
 
   \item \textbf{Tauri v2 ACL 拦截自定义 IPC 命令}
-    \\→ 解决：将所有 app 级命令统一放在 \texttt{permissions/settings.toml} 的 \texttt{commands.allow} 列表中，而非分散在多个权限文件，确保所有命令被正确授权
+    \\→ 解决：将所有命令统一放在 \texttt{permissions/settings.toml} 的 \texttt{commands.allow} 中，避免分散遗漏
 
   \item \textbf{About 标签诊断信息不显示}
     \\→ 解决：在 \texttt{buildAbout} 末尾添加 \texttt{loadDiagnostics()} 调用，截断 Git 哈希至 8 位，添加 \texttt{word-break:break-all} 防止文字溢出
 
-  \item \textbf{右下角旧齿轮按钮与新左下角按钮并存}
-    \\→ 解决：定位到原始代码中的 FAB（Floating Action Button）\texttt{\_\_ps\_fab} 和旧 \texttt{\_\_pgb} 按钮代码，逐一从 \texttt{custom.js} 中移除
+  \item \textbf{右下角按钮布局调整——旧齿轮按钮与新按钮重叠}
+    \\→ 解决：定位到原始代码中的 FAB（Floating Action Button）\texttt{\_\_ps\_fab} 和旧 \texttt{\_\_pgb} 按钮代码，移除冗余按钮后统一在 \texttt{DOMContentLoaded} 中创建 ↻ 刷新（右上角，蓝色边框）和 ⚙ 设置（右下角，紫色渐变）两个按钮，不再使用 \texttt{document.documentElement.appendChild}
 \end{enumerate}
 
 % ================================================================
@@ -968,7 +1069,7 @@ fn write_settings(app: &AppHandle, s: &AppSettings) -> Result<(), String> {
 
 \subsection{测试数据}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{lccc}
 \toprule
@@ -985,7 +1086,7 @@ cargo build & --- & --- & 成功 \\
 
 \subsection{关键测试用例}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{p{5cm}l}
 \toprule
@@ -1007,13 +1108,40 @@ Theme 枚举反序列化（合法值 + 非法值拒绝） & 通过 \\
 \end{tabular}
 \caption{关键测试用例}
 \end{table}
-针对成员 C 的 CLI 参数、配置合并、面板交互与权限控制进行了定向测试，
+
+\subsection{模块测试截图}
+
+\subsubsection{广告拦截模块}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testa.png}
+\caption{广告拦截模块测试——CLI \texttt{--block-ads} 构建输出、代码完整性检查、IPC 命令注册与权限验证}
+\end{figure}
+
+\subsubsection{离线缓存模块}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testb_1.png}
+\caption{离线缓存模块测试——代码完整性检查、IPC 命令注册、离线模式功能验证（横幅/徽章/toast/提示页）}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{images/testb_2.png}
+\caption{离线缓存模块测试——CLI \texttt{--cache --cache-size} 选项验证、cargo check 编译检查}
+\end{figure}
+
+\subsubsection{剪贴板管理模块}
+
+针对剪贴板管理模块的 CLI 参数、配置合并、面板交互与权限控制进行了定向测试，
 共执行 5 个测试文件、56 个测试用例，结果全部通过。
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{images/powershell-a-tests.png}
-  \caption{PowerShell A：成员 C 定向测试结果（56 项全部通过）}
+  \includegraphics[width=0.65\textwidth]{images/powershell-a-tests.png}
+  \caption{剪贴板管理模块定向测试结果（56 项全部通过）}
 \end{figure}
 
 CLI 边界测试分别传入 499 和 5001，程序均在打包前拒绝参数，
@@ -1021,22 +1149,59 @@ CLI 边界测试分别传入 499 和 5001，程序均在打包前拒绝参数，
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.88\textwidth]{images/powershell-a-boundary.png}
-  \caption{PowerShell A：剪贴板容量参数边界校验}
+  \includegraphics[width=0.65\textwidth]{images/powershell-a-boundary.png}
+  \caption{剪贴板容量参数边界校验}
 \end{figure}
 
-PowerShell B 进一步验证运行时默认值与容量压力场景。未指定容量上限的实例在空历史状态下显示
-“0 条记录 / 2000”，与默认值 2000 一致；随后通过带重试的 PowerShell 函数连续写入
-500 条不同的普通中文文本，用于观察监听完整性及容量上限行为。
+PowerShell B 进一步验证运行时默认值与容量压力场景。
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.58\textwidth]{images/powershell-b-default.png}
   \\[0.25cm]
-  \includegraphics[width=0.88\textwidth]{images/powershell-b-capacity.png}
-  \caption{PowerShell B：默认容量显示与 500 条剪贴板批量写入测试}
+  \includegraphics[width=0.65\textwidth]{images/powershell-b-capacity.png}
+  \caption{默认容量显示与 500 条剪贴板批量写入测试}
 \end{figure}
 
+\subsubsection{设置面板与数据管理模块}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testd_1.png}
+\caption{设置面板模块测试——代码完整性检查、IPC 命令注册与权限授权、备份系统验证}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testd_2.png}
+\caption{设置面板模块测试——ModuleSettings trait 实现、导出/导入功能、诊断信息字段、UI 功能检查}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testd_3.png}
+\caption{设置面板模块测试——Rust 单元测试（19 项全部通过）}
+\end{figure}
+
+\subsection{全模块整合测试}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testall_1.png}
+\caption{整合测试——全模块 85 项检查全部通过（PASS=85 / FAIL=0）}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/testall_2.png}
+\caption{整合测试——各模块代码完整性、IPC 注册、权限授权逐项检查}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.60\textwidth]{images/testall_3.png}
+\caption{整合测试——cargo check 0 errors、CLI 全选项验证（\texttt{--block-ads / --cache / --cache-size / --clipboard}）}
+\end{figure}
 
 \subsection{命令行示例}
 
@@ -1069,17 +1234,17 @@ pake https://example.com --name MyApp \
 
 \subsection{新增部分（对比原项目）}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabularx}{\textwidth}{lXXc}
 \toprule
 模块 & 新增内容 & 核心技术 & 代码量 \\
 \midrule
-广告拦截   & EasyList 规则引擎、网络拦截、DOM 隐藏、自定义规则 & 请求拦截器 & --- \\
-离线缓存   & HTTP 代理缓存、LRU 淘汰、离线模式、缓存统计 & tokio 异步 I/O & --- \\
-剪贴板     & 系统级监听（FFI）、历史搜索、一键复用、自动清理 & Win32 FFI & --- \\
-设置面板   & 可视化配置、数据导入导出、诊断采集、版本回滚、健康检查 & \texttt{ModuleSettings} trait & $\sim$660 行 \\
+广告拦截   & EasyList 规则引擎（32 域名 + 2 正则 + 9 CSS）、fetch/XHR 拦截、DOM 元素隐藏、自定义规则编辑、拦截统计 & 请求代理、MutationObserver、Rust 规则解析器 & $\sim$450 行 \\
+离线缓存   & HTTP 透明代理缓存、LRU 淘汰算法、磁盘索引持久化、离线模式自动切换、缓存命中 toast 提示、离线横幅 & tokio 异步 I/O、tauri-plugin-http::reqwest & $\sim$520 行 \\
+剪贴板管理 & 系统级监听（OS FFI）、SQLite 历史存储、全文搜索面板、一键复用、隐私过滤、自动清理 & clipboard-rs、rusqlite、wl-clipboard-rs & $\sim$900 行 \\
+设置面板   & 可视化配置（6 标签页）、数据导出/导入（ZIP）、系统诊断（sysinfo）、版本备份与恢复（5 版轮转）、健康检查、欢迎页 URL 导航系统（自动补全 + 跨域无闪跳转）、桌面快捷部署、多模块框架集成与功能完善 & ModuleSettings trait、zip crate、sysinfo、rfd、window.name 跨域标记 & $\sim$900 行 \\
 \bottomrule
 \end{tabularx}
 \caption{与 Pake 原项目的差异}

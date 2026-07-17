@@ -159,6 +159,12 @@ export interface PakeCliOptions {
 
   // Custom adblock rules file path (merged with built-in EasyList subset)
   adblockRules: string;
+
+  // Enable HTTP-level offline cache proxy, default false
+  cache: boolean;
+
+  // Cache size limit in MB, default 200
+  cacheSize: number;
 }
 
 export interface PakeAppOptions extends PakeCliOptions {
@@ -213,6 +219,8 @@ export interface PakeConfig {
   clipboard_max: number;
   block_ads?: boolean;
   adblock_rules?: string;
+  cache?: boolean;
+  cache_size?: number;
   inject?: string[];
 }
 

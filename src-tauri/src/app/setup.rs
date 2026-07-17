@@ -284,10 +284,6 @@ pub fn set_global_shortcut(
         activation_hotkey = None;
     }
 
-    if activation_hotkey.is_none() && clipboard_hotkey.is_none() {
-        return Ok(());
-    }
-
     let last_triggered = Arc::new(Mutex::new(Instant::now()));
 
     // Pre-compute settings shortcut for use in the handler below.
@@ -360,6 +356,12 @@ pub fn set_global_shortcut(
         if let Err(error) = app.global_shortcut().register(hotkey) {
             eprintln!("[Pake] Failed to bind clipboard shortcut: {error}");
         }
+    }
+
+    // Register settings panel shortcut (Ctrl+Shift+,)
+    // settings_shortcut is defined above and captured by the handler; Shortcut: Copy so we can reuse it here
+    if let Err(error) = app.global_shortcut().register(settings_shortcut) {
+        eprintln!("[Pake] Failed to register settings shortcut: {error}");
     }
 
     Ok(())

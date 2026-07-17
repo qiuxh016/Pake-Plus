@@ -62,4 +62,6 @@ export const DEFAULT_PAKE_OPTIONS: PakeCliOptions = {
   clipboardMax: 2000,
   blockAds: false,
   adblockRules: '',
+  cache: false,
+  cacheSize: 200,
 };

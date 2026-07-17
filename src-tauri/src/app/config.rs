@@ -95,10 +95,18 @@ pub struct PakeConfig {
     pub block_ads: bool,
     #[serde(default)]
     pub adblock_rules: String,
+    #[serde(default)]
+    pub cache: bool,
+    #[serde(default = "default_cache_size")]
+    pub cache_size: u32,
 }
 
 fn default_clipboard_max() -> u32 {
     2000
+}
+
+fn default_cache_size() -> u32 {
+    200
 }
 
 impl PakeConfig {

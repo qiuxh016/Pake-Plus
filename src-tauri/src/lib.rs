@@ -1,10 +1,13 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+mod adblock;
 mod app;
+mod cache;
 mod util;
 
-use std::str::FromStr;
-use tauri::{Listener, Manager};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use tauri::Manager;
+#[cfg(feature = "clipboard")]
+use tauri::Listener;
+
 use tauri_plugin_window_state::Builder as WindowStatePlugin;
 use tauri_plugin_window_state::StateFlags;
 
@@ -27,20 +30,24 @@ use app::clipboard::{
     clipboard_hide_panel, clipboard_list, clipboard_search, clipboard_show_panel, clipboard_stats,
     clipboard_update_settings, init_clipboard_state,
 };
+use crate::adblock::AdblockState;
+use crate::cache::commands::{cache_clear, cache_fetch, cache_get_stats, cache_stats_json};
+use crate::cache::CacheState;
 use app::{
     invoke::{
+        adblock_add_rule, adblock_get_stats, adblock_remove_rule, adblock_report_blocked,
         clear_dock_badge, download_file, increment_dock_badge, send_notification, set_dock_badge,
         set_dock_badge_label, set_zoom, update_theme_mode,
     },
     settings::{
-        copy_diagnostics_report, export_data, get_diagnostics, get_module_stats, get_settings,
-        import_data, list_backups, preview_import, reset_settings, rollback_settings,
-        save_settings, validate_settings,
+        copy_diagnostics_report, export_data, get_diagnostics, get_download_dir, get_module_stats,
+        get_settings, import_data, list_backups, pick_save_path, pick_zip_file,
+        preview_import, reset_settings, rollback_settings, save_settings, validate_settings,
     },
     setup::{set_global_shortcut, set_system_tray},
     window::{open_additional_window_safe, set_window, MultiWindowState},
 };
-use util::get_pake_config;
+use util::{get_data_dir, get_pake_config};
 
 #[cfg(any(target_os = "linux", test))]
 fn is_disabled_env_value(value: &str) -> bool {
@@ -171,12 +178,14 @@ pub fn run_app() {
         clipboard_enabled, clipboard_max
     );
     let _enable_find = pake_config.windows[0].enable_find;
-    #[cfg(feature = "clipboard")]
+    let block_ads = pake_config.block_ads;
+    let adblock_rules = pake_config.adblock_rules.clone();
+    let cache_enabled = pake_config.cache;
+    let cache_size = pake_config.cache_size;
     let package_name = tauri_config
         .product_name
         .clone()
         .unwrap_or_else(|| "pake".to_string());
-
     let window_state_plugin = WindowStatePlugin::default()
         .with_state_flags(if init_fullscreen {
             StateFlags::FULLSCREEN
@@ -267,6 +276,16 @@ pub fn run_app() {
                 clipboard_show_panel,
                 clipboard_get_settings,
                 clipboard_update_settings,
+                adblock_report_blocked,
+                adblock_get_stats,
+                adblock_add_rule,
+                adblock_remove_rule,
+                pick_save_path,
+                pick_zip_file,
+                cache_fetch,
+                cache_get_stats,
+                cache_clear,
+                cache_stats_json,
             ]);
     }
 
@@ -304,6 +323,16 @@ pub fn run_app() {
             list_backups,
             get_diagnostics,
             copy_diagnostics_report,
+            adblock_report_blocked,
+            adblock_get_stats,
+            adblock_add_rule,
+            adblock_remove_rule,
+            pick_save_path,
+            pick_zip_file,
+            cache_fetch,
+            cache_get_stats,
+            cache_clear,
+            cache_stats_json,
         ]);
     }
 
@@ -325,6 +354,22 @@ pub fn run_app() {
                 });
             }
             // --- Menu Construction End ---
+
+            // Init adblock state before set_window so it's available during webview creation
+            if block_ads {
+                let adblock_state =
+                    AdblockState::new(true, &adblock_rules);
+                app.manage(adblock_state);
+            }
+
+            // Init cache state before set_window so cache.js can be injected
+            if cache_enabled {
+                let cache_dir = get_data_dir(app.app_handle(), package_name.clone())
+                    .map(|d| d.join("cache"))
+                    .map_err(|e| tauri::Error::Io(e))?;
+                let cache_state = CacheState::new(cache_dir, true, cache_size);
+                app.manage(cache_state);
+            }
 
             let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
 
@@ -365,18 +410,6 @@ pub fn run_app() {
             let health = app::settings::run_health_check(app.app_handle());
             for msg in &health {
                 eprintln!("[Pake] Health: {}", msg);
-            }
-
-            // Register settings panel shortcut (Ctrl+Shift+,)
-            // NOTE: global_shortcut plugin is already registered by set_global_shortcut above.
-            // We reuse the existing plugin manager instead of calling app.plugin() a second time
-            // (which would fail because Tauri only allows one plugin instance per type).
-            {
-                let shortcut = Shortcut::from_str("Ctrl+Shift+Comma")
-                    .unwrap_or_else(|_| Shortcut::from_str("Ctrl+Alt+S").expect("fallback"));
-                if let Err(error) = app.app_handle().global_shortcut().register(shortcut) {
-                    eprintln!("[Pake] Failed to register settings shortcut: {error}");
-                }
             }
 
             // Listen for frontend event to open clipboard panel

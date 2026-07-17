@@ -38,8 +38,12 @@
   "system_tray_path": "icons/icon.png",
   "inject": [],
   "proxy_url": "",
+  "block_ads": true,
+  "adblock_rules": "",
+  "cache": true,
+  "cache_size": 200,
   "multi_instance": false,
   "multi_window": false,
-  "clipboard": false,
+  "clipboard": true,
   "clipboard_max": 2000
 }

@@ -363,6 +363,8 @@ async function injectCustomCode(
     clipboardMax,
     blockAds,
     adblockRules,
+    cache,
+    cacheSize,
   } = options;
   const injectFilePath = path.join(
     npmDirectory,
@@ -409,6 +411,9 @@ async function injectCustomCode(
   } else {
     tauriConf.pake.adblock_rules = '';
   }
+
+  tauriConf.pake.cache = cache;
+  tauriConf.pake.cache_size = cacheSize;
 
   if (wasm) {
     tauriConf.app.security = {
