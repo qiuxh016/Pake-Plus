@@ -60,9 +60,7 @@ pub async fn cache_fetch(
     if let Some(entry) = state.engine.check_cache(&url) {
         let body = state.engine.read_body(&entry);
         if let Some(body) = body {
-            let is_text = entry
-                .content_type
-                .starts_with("text/")
+            let is_text = entry.content_type.starts_with("text/")
                 || entry.content_type.contains("json")
                 || entry.content_type.contains("javascript")
                 || entry.content_type.contains("xml")
@@ -122,19 +120,17 @@ async fn direct_fetch_and_cache(
     }
 
     // Parse Cache-Control max-age.
-    let max_age = response_headers
-        .get("cache-control")
-        .and_then(|v| {
-            v.to_lowercase()
-                .split(',')
-                .find(|part| part.trim().starts_with("max-age"))
-                .and_then(|part| {
-                    part.trim()
-                        .strip_prefix("max-age")
-                        .and_then(|s| s.trim().strip_prefix('='))
-                        .and_then(|s| s.trim().parse::<u64>().ok())
-                })
-        });
+    let max_age = response_headers.get("cache-control").and_then(|v| {
+        v.to_lowercase()
+            .split(',')
+            .find(|part| part.trim().starts_with("max-age"))
+            .and_then(|part| {
+                part.trim()
+                    .strip_prefix("max-age")
+                    .and_then(|s| s.trim().strip_prefix('='))
+                    .and_then(|s| s.trim().parse::<u64>().ok())
+            })
+    });
 
     let body = response
         .bytes()
@@ -145,7 +141,13 @@ async fn direct_fetch_and_cache(
 
     // Only cache successful GET responses.
     if status == 200 {
-        engine.store(url, &body_bytes, &content_type, max_age, response_headers.clone());
+        engine.store(
+            url,
+            &body_bytes,
+            &content_type,
+            max_age,
+            response_headers.clone(),
+        );
     }
 
     let is_text = content_type.starts_with("text/")
@@ -154,10 +156,7 @@ async fn direct_fetch_and_cache(
         || content_type.contains("xml")
         || content_type.contains("svg");
     let (body_text, body_b64) = if is_text {
-        (
-            String::from_utf8_lossy(&body_bytes).to_string(),
-            None,
-        )
+        (String::from_utf8_lossy(&body_bytes).to_string(), None)
     } else {
         let b64 = base64_encode(&body_bytes);
         (String::new(), Some(b64))

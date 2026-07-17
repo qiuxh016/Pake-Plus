@@ -162,10 +162,7 @@ impl CacheEngine {
         };
 
         let now = Self::now_secs();
-        let expired = index
-            .entries
-            .get(url)
-            .map_or(false, |e| now > e.expires_at);
+        let expired = index.entries.get(url).map_or(false, |e| now > e.expires_at);
 
         if expired {
             if let Some(entry) = index.entries.remove(url) {

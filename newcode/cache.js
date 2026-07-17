@@ -2,7 +2,7 @@
 // Intercepts fetch() and XMLHttpRequest to route through the Rust cache engine.
 
 (function () {
-  'use strict';
+  "use strict";
 
   // ── Guard: only inject once ──────────────────────────────────
   if (window.__pakeCacheInjected) return;
@@ -15,7 +15,7 @@
       : null;
 
   if (!invoke) {
-    console.warn('[Pake Cache] Tauri IPC not available — cache disabled.');
+    console.warn("[Pake Cache] Tauri IPC not available — cache disabled.");
     return;
   }
 
@@ -24,11 +24,11 @@
     if (!contentType) return true;
     var ct = contentType.toLowerCase();
     return (
-      ct.startsWith('text/') ||
-      ct.indexOf('json') !== -1 ||
-      ct.indexOf('javascript') !== -1 ||
-      ct.indexOf('xml') !== -1 ||
-      ct.indexOf('svg') !== -1
+      ct.startsWith("text/") ||
+      ct.indexOf("json") !== -1 ||
+      ct.indexOf("javascript") !== -1 ||
+      ct.indexOf("xml") !== -1 ||
+      ct.indexOf("svg") !== -1
     );
   }
 
@@ -37,21 +37,21 @@
 
   window.fetch = function (input, init) {
     init = init || {};
-    var method = (init.method || 'GET').toUpperCase();
-    if (method !== 'GET') {
+    var method = (init.method || "GET").toUpperCase();
+    if (method !== "GET") {
       return _origFetch.apply(this, arguments);
     }
 
-    var url = typeof input === 'string' ? input : input.url;
+    var url = typeof input === "string" ? input : input.url;
     if (!url) return _origFetch.apply(this, arguments);
 
     // Skip non-http URLs.
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
       return _origFetch.apply(this, arguments);
     }
 
     // Call Rust cache proxy.
-    return invoke('cache_fetch', { url: url, forceCache: true })
+    return invoke("cache_fetch", { url: url, forceCache: true })
       .then(function (res) {
         var headers = new Headers(res.headers || {});
         var body = res.body;
@@ -69,7 +69,7 @@
         });
       })
       .catch(function (err) {
-        console.warn('[Pake Cache] cache_fetch failed, falling back: ' + err);
+        console.warn("[Pake Cache] cache_fetch failed, falling back: " + err);
         return _origFetch.apply(this, arguments);
       });
   };
@@ -92,9 +92,13 @@
     };
 
     xhr.send = function (body) {
-      if (cacheMethod === 'GET' && cacheUrl && (cacheUrl.startsWith('http://') || cacheUrl.startsWith('https://'))) {
+      if (
+        cacheMethod === "GET" &&
+        cacheUrl &&
+        (cacheUrl.startsWith("http://") || cacheUrl.startsWith("https://"))
+      ) {
         var self = this;
-        invoke('cache_fetch', { url: cacheUrl, forceCache: true })
+        invoke("cache_fetch", { url: cacheUrl, forceCache: true })
           .then(function (res) {
             var responseText = res.body;
             if (res.body_base64) {
@@ -102,20 +106,43 @@
               return _send.call(self, body);
             }
             // Simulate a successful response.
-            Object.defineProperty(self, 'readyState', { value: 4, writable: true });
-            Object.defineProperty(self, 'status', { value: res.status, writable: true });
-            Object.defineProperty(self, 'statusText', { value: 'OK', writable: true });
-            Object.defineProperty(self, 'responseText', { value: responseText, writable: true });
-            Object.defineProperty(self, 'response', { value: responseText, writable: true });
-            Object.defineProperty(self, 'responseURL', { value: cacheUrl, writable: true });
-            var contentType = res.content_type || 'text/html';
-            Object.defineProperty(self, 'responseType', { value: '', writable: true });
-            // Build response headers.
-            var headerStr = '';
-            Object.keys(res.headers || {}).forEach(function (k) {
-              headerStr += k + ': ' + res.headers[k] + '\r\n';
+            Object.defineProperty(self, "readyState", {
+              value: 4,
+              writable: true,
             });
-            var getAllResponseHeaders = function () { return headerStr; };
+            Object.defineProperty(self, "status", {
+              value: res.status,
+              writable: true,
+            });
+            Object.defineProperty(self, "statusText", {
+              value: "OK",
+              writable: true,
+            });
+            Object.defineProperty(self, "responseText", {
+              value: responseText,
+              writable: true,
+            });
+            Object.defineProperty(self, "response", {
+              value: responseText,
+              writable: true,
+            });
+            Object.defineProperty(self, "responseURL", {
+              value: cacheUrl,
+              writable: true,
+            });
+            var contentType = res.content_type || "text/html";
+            Object.defineProperty(self, "responseType", {
+              value: "",
+              writable: true,
+            });
+            // Build response headers.
+            var headerStr = "";
+            Object.keys(res.headers || {}).forEach(function (k) {
+              headerStr += k + ": " + res.headers[k] + "\r\n";
+            });
+            var getAllResponseHeaders = function () {
+              return headerStr;
+            };
             var getResponseHeader = function (name) {
               var lc = name.toLowerCase();
               var found = null;
@@ -124,18 +151,18 @@
               });
               return found;
             };
-            Object.defineProperty(self, 'getAllResponseHeaders', {
+            Object.defineProperty(self, "getAllResponseHeaders", {
               value: getAllResponseHeaders,
               writable: true,
             });
-            Object.defineProperty(self, 'getResponseHeader', {
+            Object.defineProperty(self, "getResponseHeader", {
               value: getResponseHeader,
               writable: true,
             });
             // Dispatch events.
-            var evt = new Event('readystatechange');
+            var evt = new Event("readystatechange");
             self.dispatchEvent(evt);
-            var loadEvt = new Event('load');
+            var loadEvt = new Event("load");
             self.dispatchEvent(loadEvt);
             if (self.onreadystatechange) self.onreadystatechange();
             if (self.onload) self.onload();
@@ -160,5 +187,5 @@
 
   window.XMLHttpRequest = CacheXHR;
 
-  console.log('[Pake Cache] Fetch & XHR interception active.');
+  console.log("[Pake Cache] Fetch & XHR interception active.");
 })();

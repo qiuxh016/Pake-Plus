@@ -83,7 +83,11 @@ pub fn get_backup_list(app: &AppHandle) -> Vec<serde_json::Value> {
                 if let Ok(modified) = meta.modified() {
                     if let Ok(dur) = modified.duration_since(std::time::UNIX_EPOCH) {
                         let ts = chrono::DateTime::from_timestamp(dur.as_secs() as i64, 0)
-                            .map(|dt| dt.with_timezone(&chrono::Local).format("%Y-%m-%d %H:%M:%S").to_string())
+                            .map(|dt| {
+                                dt.with_timezone(&chrono::Local)
+                                    .format("%Y-%m-%d %H:%M:%S")
+                                    .to_string()
+                            })
                             .unwrap_or_default();
                         backups.push(serde_json::json!({
                             "version": i,

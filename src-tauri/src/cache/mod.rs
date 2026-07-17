@@ -27,7 +27,10 @@ pub fn update_tray_cache_info(app: &AppHandle) {
             let stats = state.engine.stats();
             let mb = stats.total_size as f64 / (1024.0 * 1024.0);
             let max_mb = stats.max_size as f64 / (1024.0 * 1024.0);
-            let tooltip = format!("Cache: {:.0}/{:.0} MB, {} files", mb, max_mb, stats.file_count);
+            let tooltip = format!(
+                "Cache: {:.0}/{:.0} MB, {} files",
+                mb, max_mb, stats.file_count
+            );
             if let Some(tray) = app.tray_by_id("pake-tray") {
                 let _ = tray.set_tooltip(Some(&tooltip));
             }

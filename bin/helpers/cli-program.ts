@@ -326,21 +326,19 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
       ).default(DEFAULT.adblockRules),
     )
     .addOption(
-      new Option(
-        '--cache',
-        'Enable HTTP-level offline cache proxy',
-      ).default(DEFAULT.cache),
+      new Option('--cache', 'Enable HTTP-level offline cache proxy').default(
+        DEFAULT.cache,
+      ),
     )
     .addOption(
-      new Option(
-        '--cache-size <number>',
-        'Cache size limit in MB (50-1000)',
-      )
+      new Option('--cache-size <number>', 'Cache size limit in MB (50-1000)')
         .default(DEFAULT.cacheSize)
         .argParser((v) => {
           const n = Number(v);
           if (isNaN(n) || !Number.isInteger(n) || n < 50 || n > 1000) {
-            throw new Error('--cache-size must be an integer between 50 and 1000');
+            throw new Error(
+              '--cache-size must be an integer between 50 and 1000',
+            );
           }
           return n;
         }),

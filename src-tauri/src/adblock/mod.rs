@@ -16,7 +16,10 @@ pub struct AdblockState {
 impl AdblockState {
     pub fn new(enabled: bool, custom_rules_text: &str) -> Self {
         Self {
-            engine: Arc::new(AdblockEngine::from_rules_text(BUILTIN_RULES, custom_rules_text)),
+            engine: Arc::new(AdblockEngine::from_rules_text(
+                BUILTIN_RULES,
+                custom_rules_text,
+            )),
             enabled,
         }
     }

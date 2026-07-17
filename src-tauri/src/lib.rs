@@ -4,9 +4,9 @@ mod app;
 mod cache;
 mod util;
 
-use tauri::Manager;
 #[cfg(feature = "clipboard")]
 use tauri::Listener;
+use tauri::Manager;
 
 use tauri_plugin_window_state::Builder as WindowStatePlugin;
 use tauri_plugin_window_state::StateFlags;
@@ -24,15 +24,15 @@ const WEBKIT_DISABLE_COMPOSITING_MODE: &str = "WEBKIT_DISABLE_COMPOSITING_MODE";
 #[cfg(target_os = "linux")]
 const GDK_BACKEND: &str = "GDK_BACKEND";
 
+use crate::adblock::AdblockState;
+use crate::cache::commands::{cache_clear, cache_fetch, cache_get_stats, cache_stats_json};
+use crate::cache::CacheState;
 #[cfg(feature = "clipboard")]
 use app::clipboard::{
     clipboard_clear_all, clipboard_copy_item, clipboard_delete_item, clipboard_get_settings,
     clipboard_hide_panel, clipboard_list, clipboard_search, clipboard_show_panel, clipboard_stats,
     clipboard_update_settings, init_clipboard_state,
 };
-use crate::adblock::AdblockState;
-use crate::cache::commands::{cache_clear, cache_fetch, cache_get_stats, cache_stats_json};
-use crate::cache::CacheState;
 use app::{
     invoke::{
         adblock_add_rule, adblock_get_stats, adblock_remove_rule, adblock_report_blocked,
@@ -41,8 +41,8 @@ use app::{
     },
     settings::{
         copy_diagnostics_report, export_data, get_diagnostics, get_download_dir, get_module_stats,
-        get_settings, import_data, list_backups, pick_save_path, pick_zip_file,
-        preview_import, reset_settings, rollback_settings, save_settings, validate_settings,
+        get_settings, import_data, list_backups, pick_save_path, pick_zip_file, preview_import,
+        reset_settings, rollback_settings, save_settings, validate_settings,
     },
     setup::{set_global_shortcut, set_system_tray},
     window::{open_additional_window_safe, set_window, MultiWindowState},
@@ -357,8 +357,7 @@ pub fn run_app() {
 
             // Init adblock state before set_window so it's available during webview creation
             if block_ads {
-                let adblock_state =
-                    AdblockState::new(true, &adblock_rules);
+                let adblock_state = AdblockState::new(true, &adblock_rules);
                 app.manage(adblock_state);
             }
 

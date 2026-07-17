@@ -434,12 +434,17 @@ document.title += " [D面板已注入]";
       txt(m[1], "font-size:11px;color:#94a3b8;margin-bottom:18px"),
     );
 
-    if (name === "general") { buildGeneral(body); loadVersionHistory(); }
-    else if (name === "adblock") buildAdblock(body);
+    if (name === "general") {
+      buildGeneral(body);
+      loadVersionHistory();
+    } else if (name === "adblock") buildAdblock(body);
     else if (name === "cache") buildCache(body);
     else if (name === "clipboard") buildClipboard(body);
     else if (name === "data") buildData(body);
-    else if (name === "about") { buildAbout(body); fillDiagnostics(); }
+    else if (name === "about") {
+      buildAbout(body);
+      fillDiagnostics();
+    }
 
     buildNav();
     if (S) {
@@ -513,13 +518,13 @@ document.title += " [D面板已注入]";
       t("ar") +
       '</span> <span style="font-size:10px;background:#eff6ff;color:#3b82f6;padding:2px 8px;border-radius:10px;margin-left:4px">' +
       t("arb") +
-      '</span></div>' +
+      "</span></div>" +
       '<button id="__ps_abedit__" style="flex-shrink:0;background:none;border:1px solid #3b82f6;color:#3b82f6;padding:3px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap">' +
       t("are") +
-      '</button></div>' +
+      "</button></div>" +
       '<div class="row-hint" style="font-size:10px;color:#94a3b8;margin-bottom:10px">' +
       t("arh") +
-      '</div>' +
+      "</div>" +
       '<textarea id="__ps_rules__" ' +
       'style="width:100%;height:90px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font-family:SF Mono,Consolas,monospace;font-size:11px;line-height:1.6" ' +
       'placeholder="||doubleclick.net^\n##.banner-ad"></textarea>';
@@ -582,7 +587,10 @@ document.title += " [D面板已注入]";
       [t("cc"), "__ps_chits__", "0 / 0"],
     ];
     for (var i = 0; i < rows.length; i++) {
-      var sr = el("div", "display:flex;justify-content:space-between;padding:6px 0");
+      var sr = el(
+        "div",
+        "display:flex;justify-content:space-between;padding:6px 0",
+      );
       sr.innerHTML =
         '<span style="font-size:11px;color:#94a3b8">' +
         rows[i][0] +
@@ -707,20 +715,29 @@ document.title += " [D面板已注入]";
     // === Export card ===
     var c = card();
     body.appendChild(c);
-    var expTitle = el("div", "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px");
+    var expTitle = el(
+      "div",
+      "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px",
+    );
     expTitle.textContent = t("de");
     c.appendChild(expTitle);
     var dld = el("div", "font-size:10px;color:#94a3b8;margin-bottom:8px");
     dld.id = "__ps_dl_dir__";
     dld.textContent = "Downloads";
     c.appendChild(dld);
-    I("get_download_dir").then(function (p) { if (p) dld.textContent = p; }).catch(function(){});
+    I("get_download_dir")
+      .then(function (p) {
+        if (p) dld.textContent = p;
+      })
+      .catch(function () {});
     // Quick export to Downloads
     c.appendChild(
       btn(
         "📦 " + t("deb") + " → Downloads",
         "width:100%;padding:8px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:6px",
-        function () { doExport(null); },
+        function () {
+          doExport(null);
+        },
       ),
     );
     // OR pick custom path
@@ -738,8 +755,13 @@ document.title += " [D面板已注入]";
         "📂",
         "padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:12px;cursor:pointer;flex-shrink:0",
         function () {
-          I("pick_save_path").then(function (p) { if (p) expPath.value = p; })
-            .catch(function (e) { console.error("[Pake] pick_save_path:", e); });
+          I("pick_save_path")
+            .then(function (p) {
+              if (p) expPath.value = p;
+            })
+            .catch(function (e) {
+              console.error("[Pake] pick_save_path:", e);
+            });
         },
       ),
     );
@@ -761,7 +783,10 @@ document.title += " [D面板已注入]";
     // === Import card ===
     var c2 = card();
     body.appendChild(c2);
-    var impTitle = el("div", "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px");
+    var impTitle = el(
+      "div",
+      "font-size:12px;font-weight:600;color:#334155;margin-bottom:4px",
+    );
     impTitle.textContent = t("di");
     c2.appendChild(impTitle);
     var impHint = el("div", "font-size:10px;color:#94a3b8;margin-bottom:6px");
@@ -772,7 +797,9 @@ document.title += " [D面板已注入]";
       btn(
         "📥 " + t("dib") + " (Downloads)",
         "width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:6px",
-        function () { doImport(null); },
+        function () {
+          doImport(null);
+        },
       ),
     );
     // OR pick custom file
@@ -790,8 +817,13 @@ document.title += " [D面板已注入]";
         "📂",
         "padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:12px;cursor:pointer;flex-shrink:0",
         function () {
-          I("pick_zip_file").then(function (p) { if (p) impPath.value = p; })
-            .catch(function (e) { console.error("[Pake] pick_zip_file:", e); });
+          I("pick_zip_file")
+            .then(function (p) {
+              if (p) impPath.value = p;
+            })
+            .catch(function (e) {
+              console.error("[Pake] pick_zip_file:", e);
+            });
         },
       ),
     );
@@ -910,9 +942,11 @@ document.title += " [D面板已注入]";
         var u = document.getElementById("__ps_csizeused__");
         if (u) u.textContent = (stats.totalSizeMB || "0") + " MB";
         var h = document.getElementById("__ps_chit__");
-        if (h) h.textContent = (stats.hitRate1h || "0%");
+        if (h) h.textContent = stats.hitRate1h || "0%";
         var c = document.getElementById("__ps_chits__");
-        if (c) c.textContent = (stats.hitCount || 0) + " / " + (stats.missCount || 0);
+        if (c)
+          c.textContent =
+            (stats.hitCount || 0) + " / " + (stats.missCount || 0);
       })
       .catch(function () {
         // Fall back to cached settings
@@ -1045,15 +1079,33 @@ document.title += " [D面板已注入]";
             var vh = document.getElementById("__ps_versions__");
             if (vh) {
               var now = new Date();
-              var ts = now.getFullYear() + "-" +
-                String(now.getMonth() + 1).padStart(2, "0") + "-" +
-                String(now.getDate()).padStart(2, "0") + " " +
-                String(now.getHours()).padStart(2, "0") + ":" +
-                String(now.getMinutes()).padStart(2, "0") + ":" +
+              var ts =
+                now.getFullYear() +
+                "-" +
+                String(now.getMonth() + 1).padStart(2, "0") +
+                "-" +
+                String(now.getDate()).padStart(2, "0") +
+                " " +
+                String(now.getHours()).padStart(2, "0") +
+                ":" +
+                String(now.getMinutes()).padStart(2, "0") +
+                ":" +
                 String(now.getSeconds()).padStart(2, "0");
-              var row = el("div", "display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9");
-              row.innerHTML = '<span style="color:#3b82f6;font-weight:600">v1 — ' + ts + ' <span style="font-size:9px;color:#94a3b8">(just saved)</span></span>';
-              var rst = btn("Restore", "padding:3px 10px;border:1px solid #e2e8f0;border-radius:5px;background:#fff;color:#3b82f6;font-size:10px;font-weight:600;cursor:pointer", function () { doRollback(1); });
+              var row = el(
+                "div",
+                "display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9",
+              );
+              row.innerHTML =
+                '<span style="color:#3b82f6;font-weight:600">v1 — ' +
+                ts +
+                ' <span style="font-size:9px;color:#94a3b8">(just saved)</span></span>';
+              var rst = btn(
+                "Restore",
+                "padding:3px 10px;border:1px solid #e2e8f0;border-radius:5px;background:#fff;color:#3b82f6;font-size:10px;font-weight:600;cursor:pointer",
+                function () {
+                  doRollback(1);
+                },
+              );
               row.appendChild(rst);
               if (vh.firstChild) {
                 vh.insertBefore(row, vh.firstChild);
@@ -1061,17 +1113,27 @@ document.title += " [D面板已注入]";
                 vh.appendChild(row);
               }
               // Limit display to 5
-              while (vh.children.length > 5) { vh.removeChild(vh.lastChild); }
+              while (vh.children.length > 5) {
+                vh.removeChild(vh.lastChild);
+              }
               // Re-number existing rows
               for (var i = 1; i < vh.children.length; i++) {
                 var spans = vh.children[i].querySelectorAll("span");
                 if (spans.length) {
-                  spans[0].innerHTML = spans[0].innerHTML.replace(/^v\d+/, "v" + (i + 1));
+                  spans[0].innerHTML = spans[0].innerHTML.replace(
+                    /^v\d+/,
+                    "v" + (i + 1),
+                  );
                   spans[0].style.color = "#64748b";
                   spans[0].style.fontWeight = "normal";
                 }
                 var btns = vh.children[i].querySelectorAll("button");
-                if (btns.length) btns[0].onclick = (function (ver) { return function () { doRollback(ver); }; })(i + 1);
+                if (btns.length)
+                  btns[0].onclick = (function (ver) {
+                    return function () {
+                      doRollback(ver);
+                    };
+                  })(i + 1);
               }
             }
           })
@@ -1195,10 +1257,17 @@ document.title += " [D面板已注入]";
   }
   function loadVersionHistory() {
     var vh = document.getElementById("__ps_versions__");
-    if (!vh) { console.log("[Pake] loadVersionHistory: element not found"); return; }
+    if (!vh) {
+      console.log("[Pake] loadVersionHistory: element not found");
+      return;
+    }
     I("list_backups")
       .then(function (list) {
-        console.log("[Pake] loadVersionHistory: got", list ? list.length : 0, "backups");
+        console.log(
+          "[Pake] loadVersionHistory: got",
+          list ? list.length : 0,
+          "backups",
+        );
         if (!list || !list.length) {
           vh.innerHTML = '<span style="color:#94a3b8">No backups yet</span>';
           return;
@@ -1298,12 +1367,14 @@ document.title += " [D面板已注入]";
       '<div style="color:#94a3b8;font-size:12px">Loading...</div></div>' +
       '<input id="__ps_welcome_url__" type="text" placeholder="Enter URL to open..." ' +
       'style="width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-radius:10px;' +
-      'font-size:15px;font-family:SF Mono,Consolas,monospace;color:#e2e8f0;margin-bottom:20px;' +
+      "font-size:15px;font-family:SF Mono,Consolas,monospace;color:#e2e8f0;margin-bottom:20px;" +
       'outline:none;background:rgba(255,255,255,.08);text-align:center" ' +
-      'value="' + location.href + '"><br>' +
+      'value="' +
+      location.href +
+      '"><br>' +
       '<button id="__ps_welcome_start__" ' +
       'style="padding:14px 56px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(59,130,246,.3)">' +
-      'Start</button>';
+      "Start</button>";
     document.body.appendChild(w);
 
     // Bind events
@@ -1398,7 +1469,10 @@ document.title += " [D面板已注入]";
 
   // ====== DOM init ======
   function initUI() {
-    if (!document.body) { setTimeout(initUI, 50); return; }
+    if (!document.body) {
+      setTimeout(initUI, 50);
+      return;
+    }
     // Welcome page
     showWelcome();
 
@@ -1434,7 +1508,7 @@ document.title += " [D面板已注入]";
     __phb.textContent = "\u{1F3E0}";
     __phb.title = "Home";
     __phb.onclick = function () {
-      window.name = "";  // clear flag so welcome shows
+      window.name = ""; // clear flag so welcome shows
       // Remove existing welcome if any
       var oldW = document.getElementById("__ps_welcome__");
       var oldBg = document.getElementById("__ps_welcome_bg__");
