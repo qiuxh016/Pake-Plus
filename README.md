@@ -3,7 +3,7 @@
     <img src=https://gw.alipayobjects.com/zos/k/fa/logo-modified.png width=138/>
 </p>
 <h1 align="center">Pake Plus</h1>
-<p align="center"><strong>Enhanced desktop app builder based on Pake —— Adblock · Cache · Clipboard · Settings</strong></p>
+<p align="center"><strong>Enhanced desktop app builder based on Pake —— Adblock · Clipboard · Settings</strong></p>
 
 ## Features
 
@@ -55,7 +55,7 @@ A unified control center managing all module configurations:
 - **Frontend**: TypeScript (CLI) + vanilla JavaScript (WebView injection), 297 tests all passing
 - **Shell**: System WebView (Windows: WebView2, macOS: WKWebView, Linux: WebKitGTK)
 - **Storage**: JSON config files + SQLite WAL (clipboard history)
-- **Key Crates**: clipboard-rs, rusqlite, sha2, regex, zip, sysinfo, arboard, chrono, built
+- **Key Crates**: clipboard-rs, rusqlite, sha2, regex, url, rfd, zip, sysinfo, arboard, chrono, built
 
 ## Quick Start
 
@@ -72,10 +72,9 @@ pnpm run cli:build
 # Package an app (with clipboard management)
 node dist/cli.js https://github.com --name MyApp --clipboard --clipboard-max 2000
 
-# Package with all features
+# Package with adblock + clipboard
 node dist/cli.js https://example.com --name MyApp \
-  --block-ads \
-  --cache --cache-size 500 \
+  --block-ads --adblock-rules ./my-rules.txt \
   --clipboard --clipboard-max 2000 \
   --show-system-tray
 ```
@@ -89,6 +88,8 @@ node dist/cli.js https://example.com --name MyApp \
 | `--width <number>`         | Window width                     | 1200    |
 | `--height <number>`        | Window height                    | 780     |
 | `--show-system-tray`       | Show system tray                 | false   |
+| `--block-ads`              | Enable ad/tracker blocking       | false   |
+| `--adblock-rules <path>`   | Custom adblock rules file        | -       |
 | `--clipboard`              | Enable clipboard management      | false   |
 | `--clipboard-max <number>` | Max clipboard records (500-5000) | 2000    |
 | `--debug`                  | Debug build                      | false   |
@@ -97,6 +98,10 @@ node dist/cli.js https://example.com --name MyApp \
 
 ```
 src-tauri/src/
+├── adblock/              # Adblock engine
+│   ├── mod.rs            # Module entry + AdblockState
+│   ├── engine.rs         # URL matching engine
+│   └── rules.rs          # EasyList rule parser
 ├── app/
 │   ├── clipboard/          # Clipboard management
 │   │   ├── monitor.rs      # System clipboard monitor (FFI)
@@ -118,6 +123,7 @@ src-tauri/src/
 │   └── window.rs           # Window creation & JS injection
 ├── inject/
 │   ├── custom.js           # Settings panel sidebar
+│   ├── adblock.js          # fetch/XHR interception + DOM hiding
 │   ├── settings.js         # Clipboard test panel
 │   └── event.js            # Keyboard shortcuts
 └── lib.rs                  # App entry & command registration

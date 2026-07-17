@@ -3,7 +3,7 @@
     <img src=https://gw.alipayobjects.com/zos/k/fa/logo-modified.png width=138/>
 </p>
 <h1 align="center">Pake Plus</h1>
-<p align="center"><strong>基于 Pake 的网页桌面应用增强工具 —— 广告拦截 · 离线缓存 · 剪贴板管理 · 可视化设置</strong></p>
+<p align="center"><strong>基于 Pake 的网页桌面应用增强工具 —— 广告拦截 · 剪贴板管理 · 可视化设置</strong></p>
 
 ## 功能
 
@@ -55,7 +55,7 @@
 - **前端**：TypeScript（CLI）+ 原生 JavaScript（WebView 注入），297 个测试全部通过
 - **桌面壳**：系统 WebView（Windows: WebView2，macOS: WKWebView，Linux: WebKitGTK）
 - **存储**：JSON 配置文件 + SQLite WAL（剪贴板历史）
-- **关键 Crates**：clipboard-rs、rusqlite、sha2、regex、zip、sysinfo、arboard、chrono、built
+- **关键 Crates**：clipboard-rs、rusqlite、sha2、regex、url、rfd、zip、sysinfo、arboard、chrono、built
 
 ## 快速开始
 
@@ -72,10 +72,9 @@ pnpm run cli:build
 # 打包应用（启用剪贴板管理）
 node dist/cli.js https://github.com --name MyApp --clipboard --clipboard-max 2000
 
-# 打包应用（启用全部功能）
+# 打包应用（启用广告拦截 + 剪贴板）
 node dist/cli.js https://example.com --name MyApp \
-  --block-ads \
-  --cache --cache-size 500 \
+  --block-ads --adblock-rules ./my-rules.txt \
   --clipboard --clipboard-max 2000 \
   --show-system-tray
 ```
@@ -89,6 +88,8 @@ node dist/cli.js https://example.com --name MyApp \
 | `--width <number>`         | 窗口宽度                    | 1200   |
 | `--height <number>`        | 窗口高度                    | 780    |
 | `--show-system-tray`       | 显示系统托盘                | false  |
+| `--block-ads`              | 启用广告/跟踪拦截           | false  |
+| `--adblock-rules <path>`   | 自定义广告规则文件          | -      |
 | `--clipboard`              | 启用剪贴板管理              | false  |
 | `--clipboard-max <number>` | 剪贴板最大记录数 (500-5000) | 2000   |
 | `--debug`                  | 调试构建                    | false  |
@@ -97,6 +98,10 @@ node dist/cli.js https://example.com --name MyApp \
 
 ```
 src-tauri/src/
+├── adblock/              # 广告拦截引擎
+│   ├── mod.rs            # 模块入口 + AdblockState
+│   ├── engine.rs         # URL 匹配引擎
+│   └── rules.rs          # EasyList 规则解析器
 ├── app/
 │   ├── clipboard/          # 剪贴板管理
 │   │   ├── monitor.rs      # 系统剪贴板监听（FFI）
@@ -118,6 +123,7 @@ src-tauri/src/
 │   └── window.rs           # 窗口创建与 JS 注入
 ├── inject/
 │   ├── custom.js           # 设置面板侧边栏
+│   ├── adblock.js          # fetch/XHR 拦截 + DOM 隐藏
 │   ├── settings.js         # 剪贴板测试面板
 │   └── event.js            # 键盘快捷键处理
 └── lib.rs                  # 应用入口与命令注册
