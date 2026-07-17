@@ -23,17 +23,16 @@ pub struct Diagnostics {
 pub fn collect_diagnostics(app: &AppHandle) -> Diagnostics {
     let settings = load_settings(app);
 
-    let mut enabled_features = Vec::new();
+    let mut enabled_features: Vec<String> = Vec::new();
+    // Check which features are actually compiled and enabled
     if settings.adblock.enabled {
         enabled_features.push("adblock".into());
     }
-    if settings.cache.enabled {
-        enabled_features.push("cache".into());
-    }
+    #[cfg(feature = "clipboard")]
     if settings.clipboard.enabled {
         enabled_features.push("clipboard".into());
     }
-    enabled_features.push("data-export".into());
+    enabled_features.push("settings".into());
 
     let mut sys = sysinfo::System::new_all();
     sys.refresh_all();

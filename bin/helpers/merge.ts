@@ -361,6 +361,8 @@ async function injectCustomCode(
     wasm,
     clipboard,
     clipboardMax,
+    blockAds,
+    adblockRules,
   } = options;
   const injectFilePath = path.join(
     npmDirectory,
@@ -391,6 +393,22 @@ async function injectCustomCode(
   tauriConf.pake.multi_instance = multiInstance;
   tauriConf.pake.multi_window = multiWindow;
   applyClipboardConfig({ clipboard, clipboardMax }, tauriConf.pake);
+
+  tauriConf.pake.block_ads = blockAds;
+
+  if (adblockRules) {
+    const rulesPath = path.isAbsolute(adblockRules)
+      ? adblockRules
+      : path.join(process.cwd(), adblockRules);
+    if (await fsExtra.pathExists(rulesPath)) {
+      tauriConf.pake.adblock_rules = await fsExtra.readFile(rulesPath, 'utf-8');
+    } else {
+      logger.warn(`✼ Adblock rules file "${adblockRules}" was not found.`);
+      tauriConf.pake.adblock_rules = '';
+    }
+  } else {
+    tauriConf.pake.adblock_rules = '';
+  }
 
   if (wasm) {
     tauriConf.app.security = {

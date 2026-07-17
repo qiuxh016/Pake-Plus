@@ -11,6 +11,7 @@ use tauri::{command, AppHandle, Manager};
 
 #[command]
 pub fn get_settings(app: AppHandle) -> AppSettings {
+    eprintln!("[Pake] get_settings called from webview");
     load_settings(&app)
 }
 
@@ -23,7 +24,24 @@ pub fn reset_settings(app: AppHandle) -> Result<(), String> {
 
 #[command]
 pub fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String> {
-    write_settings(&app, &settings)
+    write_settings(&app, &settings)?;
+
+    // Sync adblock custom rules to the engine if it's running
+    if let Some(state) = app.try_state::<crate::adblock::AdblockState>() {
+        let current = state.engine.custom_rules();
+        if current != settings.adblock.custom_rules {
+            // Clear old custom rules and add new ones
+            for rule in &current {
+                state.engine.remove_custom_rule(rule);
+            }
+            for rule in &settings.adblock.custom_rules {
+                let _ = state.engine.add_custom_rule(rule);
+            }
+            eprintln!("[Pake] adblock custom rules synced: {} rules", settings.adblock.custom_rules.len());
+        }
+    }
+
+    Ok(())
 }
 
 #[command]
@@ -51,21 +69,78 @@ pub fn get_module_stats(app: AppHandle) -> serde_json::Value {
     })
 }
 
-// ========== Export / Import ==========
+// ========== File dialogs ==========
 
 #[command]
-pub fn export_data(app: AppHandle) -> Result<String, String> {
+pub fn pick_save_path() -> Result<String, String> {
+    rfd::FileDialog::new()
+        .set_title("选择导出位置")
+        .save_file()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "cancelled".into())
+}
+
+#[command]
+pub fn pick_zip_file() -> Result<String, String> {
+    rfd::FileDialog::new()
+        .set_title("选择数据文件")
+        .add_filter("ZIP 文件", &["zip"])
+        .pick_file()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "cancelled".into())
+}
+
+// ========== Export / Import ==========
+
+fn collect_files(
+    dir: &PathBuf,
+    file_list: &mut Vec<String>,
+    total_size: &mut u64,
+) -> Result<(), String> {
+    if !dir.exists() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(dir).map_err(|e| format!("read dir: {}", e))? {
+        let entry = entry.map_err(|e| format!("entry: {}", e))?;
+        let path = entry.path();
+        if path.is_file() {
+            if let Ok(meta) = path.metadata() {
+                *total_size += meta.len();
+                // Store relative path from data_dir parent
+                if let (Some(parent_name), Some(file_name)) =
+                    (dir.file_name(), path.file_name())
+                {
+                    let rel = format!("{}/{}", parent_name.to_string_lossy(), file_name.to_string_lossy());
+                    file_list.push(rel);
+                }
+            }
+        } else if path.is_dir() {
+            collect_files(&path, file_list, total_size)?;
+        }
+    }
+    Ok(())
+}
+
+#[command]
+pub fn export_data(app: AppHandle, save_path: Option<String>) -> Result<String, String> {
     let data_dir = app
         .path()
         .app_data_dir()
         .map_err(|e| format!("failed to get data dir: {}", e))?;
 
+    // Ensure data dir exists
+    fs::create_dir_all(&data_dir).map_err(|e| format!("failed to create data dir: {}", e))?;
+
     let default_name = format!("pake-data-{}.zip", chrono::Local::now().format("%Y%m%d"));
-    let downloads = app
-        .path()
-        .download_dir()
-        .unwrap_or_else(|_| PathBuf::from("."));
-    let save_path = downloads.join(&default_name);
+    let save_path = if let Some(user_path) = save_path {
+        let p = PathBuf::from(&user_path);
+        if p.is_dir() { p.join(&default_name) } else { p }
+    } else {
+        app.path()
+            .download_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(&default_name)
+    };
 
     let mut file_list: Vec<String> = Vec::new();
     let mut total_size: u64 = 0;
@@ -82,12 +157,16 @@ pub fn export_data(app: AppHandle) -> Result<String, String> {
                         file_list.push(name.to_string_lossy().to_string());
                     }
                 }
+            } else if path.is_dir() {
+                // Walk subdirectories (e.g., clipboard/)
+                collect_files(&path, &mut file_list, &mut total_size)
+                    .map_err(|e| format!("failed to scan {}: {}", path.display(), e))?;
             }
         }
     }
 
     if file_list.is_empty() {
-        return Err("no data files found to export".into());
+        return Err("no data files found to export. Save settings or use clipboard first.".into());
     }
 
     let zip_file =
@@ -193,38 +272,46 @@ pub fn preview_import(app: AppHandle) -> Result<String, String> {
 }
 
 #[command]
-pub fn import_data(app: AppHandle) -> Result<String, String> {
+pub fn import_data(app: AppHandle, zip_path: Option<String>) -> Result<String, String> {
     let data_dir = app
         .path()
         .app_data_dir()
         .map_err(|e| format!("failed to get data dir: {}", e))?;
 
-    let downloads = app
-        .path()
-        .download_dir()
-        .unwrap_or_else(|_| PathBuf::from("."));
+    let zip_path = if let Some(custom_path) = zip_path {
+        let p = PathBuf::from(&custom_path);
+        if !p.exists() {
+            return Err(format!("文件不存在: {}", custom_path));
+        }
+        p
+    } else {
+        // Default: find latest in Downloads
+        let downloads = app
+            .path()
+            .download_dir()
+            .unwrap_or_else(|_| PathBuf::from("."));
 
-    let mut zip_files: Vec<_> = fs::read_dir(&downloads)
-        .map_err(|e| format!("failed to read downloads dir: {}", e))?
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with("pake-data-") && name.ends_with(".zip") {
-                let metadata = entry.metadata().ok()?;
-                let modified = metadata.modified().ok()?;
-                Some((entry.path(), modified))
-            } else {
-                None
-            }
-        })
-        .collect();
+        let mut zip_files: Vec<_> = fs::read_dir(&downloads)
+            .map_err(|e| format!("读取下载目录失败: {}", e))?
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.starts_with("pake-data-") && name.ends_with(".zip") {
+                    let metadata = entry.metadata().ok()?;
+                    let modified = metadata.modified().ok()?;
+                    Some((entry.path(), modified))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-    if zip_files.is_empty() {
-        return Err("no data file found (pake-data-*.zip) in Downloads".into());
-    }
-
-    zip_files.sort_by(|a, b| b.1.cmp(&a.1));
-    let (zip_path, _) = &zip_files[0];
+        if zip_files.is_empty() {
+            return Err("Downloads 目录中找不到 pake-data-*.zip 文件".into());
+        }
+        zip_files.sort_by(|a, b| b.1.cmp(&a.1));
+        zip_files.remove(0).0
+    };
 
     let temp_dir = std::env::temp_dir().join("pake-import-temp");
     let _ = fs::remove_dir_all(&temp_dir);

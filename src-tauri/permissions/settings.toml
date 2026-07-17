@@ -1,6 +1,6 @@
 [[permission]]
 identifier = "allow-settings-commands"
-description = "Allows the settings panel to read/write app settings, run diagnostics, and manage data."
+description = "Allows the main webview to call all app commands."
 commands.allow = [
   "get_settings",
   "save_settings",
@@ -11,4 +11,20 @@ commands.allow = [
   "copy_diagnostics_report",
   "export_data",
   "import_data",
+  "pick_save_path",
+  "pick_zip_file",
+  "clipboard_list",
+  "clipboard_search",
+  "clipboard_copy_item",
+  "clipboard_delete_item",
+  "clipboard_clear_all",
+  "clipboard_stats",
+  "clipboard_show_panel",
+  "clipboard_hide_panel",
+  "clipboard_get_settings",
+  "clipboard_update_settings",
+  "adblock_get_stats",
+  "adblock_add_rule",
+  "adblock_remove_rule",
+  "adblock_report_blocked",
 ]

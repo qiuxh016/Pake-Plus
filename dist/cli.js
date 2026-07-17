@@ -773,7 +773,7 @@ async function mergeIcons(options, name, tauriConf, platform, safeAppName) {
     delete tauriConf.app.trayIcon;
 }
 async function injectCustomCode(options, tauriConf) {
-    const { inject, proxyUrl, multiInstance, multiWindow, wasm, clipboard, clipboardMax, } = options;
+    const { inject, proxyUrl, multiInstance, multiWindow, wasm, clipboard, clipboardMax, blockAds, adblockRules, } = options;
     const injectFilePath = path.join(npmDirectory, 'src-tauri/src/inject/custom.js');
     if (inject?.length > 0) {
         const injectArray = Array.isArray(inject) ? inject : [inject];
@@ -793,6 +793,22 @@ async function injectCustomCode(options, tauriConf) {
     tauriConf.pake.multi_instance = multiInstance;
     tauriConf.pake.multi_window = multiWindow;
     applyClipboardConfig({ clipboard, clipboardMax }, tauriConf.pake);
+    tauriConf.pake.block_ads = blockAds;
+    if (adblockRules) {
+        const rulesPath = path.isAbsolute(adblockRules)
+            ? adblockRules
+            : path.join(process.cwd(), adblockRules);
+        if (await fsExtra.pathExists(rulesPath)) {
+            tauriConf.pake.adblock_rules = await fsExtra.readFile(rulesPath, 'utf-8');
+        }
+        else {
+            logger.warn(`✼ Adblock rules file "${adblockRules}" was not found.`);
+            tauriConf.pake.adblock_rules = '';
+        }
+    }
+    else {
+        tauriConf.pake.adblock_rules = '';
+    }
     if (wasm) {
         tauriConf.app.security = {
             headers: {
@@ -2806,6 +2822,8 @@ const DEFAULT_PAKE_OPTIONS = {
     microphone: false,
     clipboard: false,
     clipboardMax: 2000,
+    blockAds: false,
+    adblockRules: '',
 };
 
 function validateNumberInput(value) {
@@ -2994,6 +3012,8 @@ ${green('|_|   \\__,_|_|\\_\\___|  can turn any webpage into a desktop app with 
         }
         return max;
     }))
+        .addOption(new Option('--block-ads', 'Enable built-in ad/tracker blocking (EasyList engine)').default(DEFAULT_PAKE_OPTIONS.blockAds))
+        .addOption(new Option('--adblock-rules <path>', 'Custom adblock rules file (merged with built-in EasyList rules)').default(DEFAULT_PAKE_OPTIONS.adblockRules))
         .version(packageJson.version, '-v, --version')
         .configureHelp({
         sortSubcommands: true,

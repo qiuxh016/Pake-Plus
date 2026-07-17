@@ -153,6 +153,12 @@ export interface PakeCliOptions {
 
   // Maximum clipboard history items, default 2000
   clipboardMax: number;
+
+  // Enable built-in ad/tracker blocking (EasyList engine), default false
+  blockAds: boolean;
+
+  // Custom adblock rules file path (merged with built-in EasyList subset)
+  adblockRules: string;
 }
 
 export interface PakeAppOptions extends PakeCliOptions {
@@ -205,6 +211,8 @@ export interface PakeConfig {
   multi_window: boolean;
   clipboard: boolean;
   clipboard_max: number;
+  block_ads?: boolean;
+  adblock_rules?: string;
   inject?: string[];
 }
 

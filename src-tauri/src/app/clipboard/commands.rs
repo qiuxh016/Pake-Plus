@@ -199,6 +199,7 @@ pub fn clipboard_clear_all(state: State<'_, ClipboardState>) -> Result<(), Strin
 
 #[command]
 pub fn clipboard_stats(state: State<'_, ClipboardState>) -> Result<ClipboardStats, String> {
+    eprintln!("[Pake] clipboard_stats called");
     state.store()?.stats().map_err(|error| error.to_string())
 }
 

@@ -43,7 +43,9 @@ chrono = "0.4"
 clipboard-rs = { version = "0.3.5", default-features = false, features = ["wayland"], optional = true }
 rusqlite = { version = "0.32", features = ["bundled"], optional = true }
 sha2 = { version = "0.10", optional = true }
-regex = { version = "1", optional = true }
+regex = "1"
+url = "2.5"
+rfd = "0.15"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 wl-clipboard-rs = { version = "0.9", optional = true }
@@ -65,7 +67,6 @@ clipboard = [
   "dep:clipboard-rs",
   "dep:rusqlite",
   "dep:sha2",
-  "dep:regex",
   "dep:wl-clipboard-rs",
 ]
 # by default Tauri runs in production mode

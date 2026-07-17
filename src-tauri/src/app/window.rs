@@ -1,3 +1,4 @@
+use crate::adblock;
 use crate::app::config::PakeConfig;
 use crate::util::{
     check_file_or_append, get_data_dir, get_download_dir, get_download_message_with_lang,
@@ -306,7 +307,31 @@ fn build_window(
         .initialization_script(include_str!("../inject/event.js"))
         .initialization_script(include_str!("../inject/style.js"))
         .initialization_script(include_str!("../inject/theme_refresh.js"))
-        .initialization_script(include_str!("../inject/auth.js"))
+        .initialization_script(include_str!("../inject/auth.js"));
+
+    eprintln!("[Pake] window: block_ads={}", config.block_ads);
+    if config.block_ads {
+        let state_opt = app.try_state::<adblock::AdblockState>();
+        eprintln!("[Pake] window: AdblockState found={}", state_opt.is_some());
+        if let Some(state) = state_opt {
+            let export = state.engine.export_for_injection(None);
+            eprintln!("[Pake] window: export domains={}, regexes={}, cosmetic={}", export.domains.len(), export.regexes.len(), export.cosmetic_selectors.len());
+            let js_config = format!(
+                "window.pakeAdblock = {};",
+                serde_json::json!({
+                    "enabled": true,
+                    "domains": export.domains,
+                    "regexes": export.regexes,
+                    "cosmetic_selectors": export.cosmetic_selectors,
+                })
+            );
+            window_builder = window_builder
+                .initialization_script(&js_config)
+                .initialization_script(include_str!("../inject/adblock.js"));
+        }
+    }
+
+    window_builder = window_builder
         .initialization_script(include_str!("../inject/custom.js"));
 
     #[cfg(target_os = "windows")]

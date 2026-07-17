@@ -60,4 +60,6 @@ export const DEFAULT_PAKE_OPTIONS: PakeCliOptions = {
   microphone: false,
   clipboard: false,
   clipboardMax: 2000,
+  blockAds: false,
+  adblockRules: '',
 };

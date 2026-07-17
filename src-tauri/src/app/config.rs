@@ -91,6 +91,10 @@ pub struct PakeConfig {
     pub clipboard: bool,
     #[serde(default = "default_clipboard_max")]
     pub clipboard_max: u32,
+    #[serde(default)]
+    pub block_ads: bool,
+    #[serde(default)]
+    pub adblock_rules: String,
 }
 
 fn default_clipboard_max() -> u32 {

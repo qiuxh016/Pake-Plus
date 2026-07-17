@@ -13,6 +13,7 @@
 \usepackage{titlesec}
 \usepackage{fancyhdr}
 \usepackage{caption}
+\usepackage{float}
 \renewcommand{\tabularxcolumn}[1]{m{#1}}
 
 % === Code style ===
@@ -36,6 +37,15 @@
   morecomment=[s]{/*}{*/},
   morestring=[b]",
   morestring=[b]',
+}
+\lstdefinelanguage{JavaScript}{
+  keywords={const,let,var,function,return,if,else,for,while,true,false,new,typeof,arguments,this,window,document,console},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  morestring=[b]`,
 }
 
 % === Header / Footer ===
@@ -178,7 +188,7 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
   \item \textbf{前端}：TypeScript（CLI）+ JavaScript（WebView 注入）
   \item \textbf{桌面壳}：系统 WebView（Windows: WebView2，macOS: WKWebView，Linux: WebKitGTK）
   \item \textbf{IPC}：Tauri Command（Rust ↔ JavaScript 双向调用）
-  \item \textbf{关键 Crates}：zip 2.2、sysinfo 0.33、arboard 3.4、chrono 0.4、built 0.7、clipboard-rs 0.3、rusqlite 0.32、sha2 0.10、regex 1、serde / serde\_json
+  \item \textbf{关键 Crates}：zip 2.2、sysinfo 0.33、arboard 3.4、chrono 0.4、built 0.7、clipboard-rs 0.3、rusqlite 0.32、sha2 0.10、regex 1、url 2.5、serde / serde\_json
 \end{itemize}
 
 \subsection{整体架构图}
@@ -208,6 +218,10 @@ Pake 是一个优秀的轻量级桌面应用打包工具，利用系统 WebView 
 
 \begin{lstlisting}[caption=Pake Plus 代码结构]
 src-tauri/src/
+├── adblock/              # [A] 广告拦截模块
+│   ├── mod.rs            # 模块入口 + AdblockState
+│   ├── engine.rs         # URL 匹配引擎（域名/正则）
+│   └── rules.rs          # EasyList 规则解析器
 ├── app/
 │   ├── clipboard/          # [C] 剪贴板管理模块
 │   │   ├── mod.rs          # 模块入口
@@ -234,6 +248,7 @@ src-tauri/src/
 ├── inject/
 │   ├── custom.js          # [D] 设置面板侧边栏（齿轮按钮触发）
 │   ├── settings.js        # [C] 剪贴板测试面板
+│   ├── adblock.js         # [A] fetch/XHR 拦截 + DOM 隐藏
 │   ├── event.js           # 剪贴板快捷键 + 事件处理
 │   └── ...
 └── lib.rs                 # 应用入口 + 命令注册
@@ -256,6 +271,8 @@ src-tauri/src/
 \textbf{SQLite 历史检索与自动清理} & SQLite WAL 持久化、唯一哈希索引与 UPSERT 去重，支持多关键词 AND 模糊搜索，并按保留天数和容量上限定时清理 & C \\
 \textbf{HTTP 层透明代理缓存} & 基于 Tauri 资源拦截，异步磁盘 I/O，LRU 淘汰算法 & B \\
 \textbf{EasyList 规则引擎} & 网络请求拦截 + DOM 元素隐藏双重过滤，支持自定义规则 & A \\
+\textbf{JavaScript 请求代理} & 代理 window.fetch / XMLHttpRequest，匹配规则返回空响应，MutationObserver 动态隐藏广告元素 & A \\
+\textbf{运行时规则同步} & 设置面板保存自定义规则后通过 IPC 同步更新广告引擎，即时生效 & A \\
 \textbf{设置版本备份与自动恢复} & 保存前轮转 5 个历史版本，启动时健康检查自动从备份修复损坏文件 & D \\
 \textbf{模块化文件结构} & 800 行单文件拆为 8 个模块（types / traits / io / health / diagnostics / commands / tests） & D \\
 \textbf{数据可移植性} & 动态扫描数据目录打包 ZIP，导入前预览确认，先备份后覆盖 & D \\
@@ -274,42 +291,158 @@ src-tauri/src/
 
 \subsubsection{设计思路}
 
-\begin{itemize}
-  \item \textbf{目标}：基于 EasyList 规则集，在请求层和 DOM 层双重过滤广告内容
-  \item \textbf{Rust 技术}：Tauri 资源请求拦截、规则解析与匹配算法、CSS 样式注入
-  \item \textbf{核心挑战}：规则集庞大（数万条），需高效的匹配性能；页面动态加载的广告需 DOM 监听
-\end{itemize}
+广告拦截模块采用``规则引擎 + 前端拦截''的双层架构。Rust 后端负责解析 EasyList 格式的规则文本，将其分类为域名过滤规则、正则表达式规则和 CSS 隐藏选择器三类，通过 Tauri 的 \texttt{initialization\_script} 机制序列化为 JSON 注入到页面中。前端 JavaScript（\texttt{adblock.js}）在页面加载时读取 \texttt{window.pakeAdblock} 配置，随后代理浏览器原生的 \texttt{fetch} 和 \texttt{XMLHttpRequest} 对象——对匹配黑名单的网络请求直接返回 HTTP 204 空响应，阻止广告资源加载；同时将 CSS 隐藏选择器注入页面 \texttt{<style>} 标签，并通过 MutationObserver 监听 DOM 变化，确保后续动态插入的广告元素也被实时隐藏。
 
-% TODO: 成员 A 完善设计思路（300-500 字）
+模块的构建时配置通过 \texttt{--block-ads} CLI 选项启用，通过 \texttt{--adblock-rules <path>} 加载用户自定义规则文件（每行一条，支持 \texttt{||domain\textasciicircum} 域名匹配和 \texttt{\#\#.selector} CSS 隐藏两种格式）。运行时，设置面板的 Adblock 标签提供 ON/OFF 开关和折叠式规则编辑器——开关通过全局变量 \texttt{window.\_\_pakeAdblockRunning} 实时控制 \texttt{adblock.js} 的拦截行为（无需页面刷新）；自定义规则保存时，Rust 后端的 \texttt{save\_settings} 命令自动对比新旧规则并调用引擎的 \texttt{add\_custom\_rule / remove\_custom\_rule} 完成同步。拦截计数器通过托盘 tooltip 显示，设置面板的拦截统计区域通过 \texttt{adblock\_get\_stats} IPC 命令获取实时数据。
+
+技术难点在于：初始化脚本的执行时机早于页面内容加载，需要确保 \texttt{AdblockState} 在窗口构建前完成初始化（否则 \texttt{try\_state} 返回 None 导致 \texttt{adblock.js} 不被注入）；Tauri v2 的 ACL 权限系统默认拒绝所有自定义 IPC 命令，需要将所有命令统一配置在权限文件中；CSS 隐藏选择器需要兼容 EasyList 的多种语法变体（\texttt{\#\#}、\texttt{\#\#\#}、\texttt{\#@\#} 例外规则等）。
 
 \subsubsection{核心流程}
 
+\begin{sloppypar}
 \begin{enumerate}[label=(\arabic*)]
-  \item 应用启动时加载 EasyList 规则集 + 用户自定义规则
-  \item 注册 Tauri 网络拦截器，对每个请求 URL 进行规则匹配
-  \item 匹配到黑名单规则的请求直接拒绝，节省带宽
-  \item 从规则中提取 CSS 选择器，注入到页面作为隐藏样式
-  \item 监听 DOM 变化（MutationObserver），对动态插入的广告元素实时隐藏
-  \item 托盘图标显示拦截计数
-\end{enumerate}
+  \item \textbf{构建时规则加载。}
+    用户执行 CLI 命令 \texttt{node dist/cli.js <url> --block-ads --adblock-rules ./my-rules.txt} 时，CLI 将 \texttt{block\_ads} 和 \texttt{adblock\_rules} 写入 \texttt{.pake/pake.json}。Rust 编译期间通过 \texttt{include\_str!} 读取内置规则文件 \texttt{easylist-mini.txt}（包含常用广告和跟踪域名），与用户自定义规则合并后初始化 \texttt{AdblockEngine}。
 
-% TODO: 成员 A 完善流程描述
+  \item \textbf{规则引擎初始化与状态管理。}
+    应用启动时，\texttt{run\_app()} 首先将 \texttt{pake\_config.block\_ads} 和 \texttt{adblock\_rules} 传递给 \texttt{AdblockState::new}。该函数调用 \texttt{AdblockEngine::from\_rules\_text} 解析所有规则文本：\texttt{parse\_rules\_text} 按行遍历，通过正则匹配识别规则类型（\texttt{||domain\textasciicircum} → 域名规则、\texttt{/regex/} → 正则规则、\texttt{\#\#selector} → CSS 隐藏选择器），结果存入 \texttt{EngineRules} 结构体。初始化完成后通过 \texttt{app.manage()} 将状态注册到 Tauri 状态管理器。
+
+  \item \textbf{规则导出与前端注入。}
+    窗口构建函数 \texttt{build\_window} 检查 \texttt{config.block\_ads} 标志，若启用则通过 \texttt{app.try\_state::<AdblockState>()} 获取引擎实例，调用 \texttt{export\_for\_injection(None)} 将内存中的域名列表（\texttt{Vec<String>}）、正则表达式（\texttt{Vec<String>}）、CSS 选择器（\texttt{Vec<String>}）序列化为 JSON，以 \texttt{window.pakeAdblock = \{enabled:true, domains:[...], regexes:[...], cosmetic\_selectors:[...]\}} 格式注入为初始化脚本。随后注入 \texttt{adblock.js} 文件。
+
+  \item \textbf{前端网络请求拦截。}
+    \texttt{adblock.js} 执行时首先检查 \texttt{window.pakeAdblock} 是否存在且 \texttt{enabled} 为 true。若启用，保存原始 \texttt{fetch} 和 \texttt{XMLHttpRequest.open} 引用，然后替换为包裹函数。包裹函数调用 \texttt{shouldBlockUrl()} 对请求 URL 进行匹配——域名规则直接比较 hostname（支持精确匹配和子域名匹配），正则规则对整个 URL 进行 \texttt{RegExp.test()}。匹配成功则调用 \texttt{reportBlock()} 递增计数器，然后返回 HTTP 204 空响应或替换 \texttt{XMLHttpRequest} 为 \texttt{about:blank}，阻止实际网络请求。
+
+  \item \textbf{前端 CSS 隐藏与 DOM 监听。}
+    \texttt{applyCosmeticRules()} 遍历 \texttt{cosmetic\_selectors} 列表，删除 \texttt{\#\#} 和 \texttt{\#\#\#} 前缀，将剩余选择器拼接为 \texttt{\{display:none!important;visibility:hidden!important\}} 样式，注入到页面 \texttt{<style id="pake-adblock-style">} 标签中。同时创建 \texttt{MutationObserver} 监听 \texttt{documentElement} 的 \texttt{childList} 和 \texttt{subtree} 变化，每当有新元素插入时重新应用 CSS 规则，确保动态加载的广告也被隐藏。
+
+  \item \textbf{运行时开关控制。}
+    设置面板的 Adblock 标签页渲染 ON/OFF 开关（\texttt{id=\_\_ps\_adblk\_\_}），点击时通过 \texttt{tg()} 函数的 onclick 处理器设置全局变量 \texttt{window.\_\_pakeAdblockRunning}。\texttt{adblock.js} 的 \texttt{shouldBlockUrl()} 和 \texttt{reportBlock()} 在每次执行前通过 \texttt{isAdblockEnabled()} 检查该标志——若为 \texttt{false}，所有拦截逻辑立即返回，请求正常通行。
+
+  \item \textbf{拦截统计展示。}
+    设置面板的拦截统计区域通过 \texttt{loadAdblockStats()} 调用 \texttt{adblock\_get\_stats} IPC 命令获取实时数据（拦截次数、规则数量）。托盘菜单的 tooltip 通过 \texttt{adblock::update\_tray\_block\_count} 更新为``已拦截 N 个请求''。前端拦截计数器每拦截一次递增，同时调用 \texttt{adblock\_report\_blocked} IPC 通知后端同步更新。
+
+  \item \textbf{自定义规则生命周期。}
+    用户点击``✏ 编辑自定义规则''展开文本区，输入规则后点击 Save。\texttt{doSave()} 收集 \texttt{\_\_ps\_rules\_\_} 文本区的值构造 \texttt{AppSettings.adblock.custom\_rules}，调用 \texttt{save\_settings} IPC。Rust 后端的 \texttt{save\_settings} 命令在写入 JSON 文件后，检测广告规则是否变化——若有差异，依次调用 \texttt{remove\_custom\_rule} 清除旧规则、\texttt{add\_custom\_rule} 添加新规则，每个规则再次经 \texttt{parse\_custom\_rule} 校验后写入引擎的 \texttt{custom\_lines} 列表，并重新合并生成网络规则和 CSS 规则。
+\end{enumerate}
+\end{sloppypar}
 
 \subsubsection{关键代码}
 
-\begin{lstlisting}[language=Rust, caption=广告拦截示例代码]
-% TODO: 成员 A 插入核心代码片段（网络拦截器注册、规则匹配、DOM 注入等）
-% 建议 1-2 段关键代码，每段 5-20 行
+\textbf{1. 规则解析与分类}
+
+\begin{lstlisting}[language=Rust, caption=EasyList 规则解析器]
+pub struct ParsedRules {
+    pub network: Vec<NetworkRule>,
+    pub cosmetic: Vec<CosmeticRule>,
+}
+pub fn parse_rules_text(text: &str) -> ParsedRules {
+    let mut network = Vec::new(); let mut cosmetic = Vec::new();
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('!') { continue; }
+        if trimmed.starts_with("##") { cosmetic.push(CosmeticRule { ... }); }
+        else if trimmed.starts_with("||") { network.push(NetworkRule::Domain(...)); }
+        else if trimmed.starts_with('/') { network.push(NetworkRule::UrlRegex(...)); }
+    }
+    ParsedRules { network, cosmetic }
+}
+\end{lstlisting}
+
+引擎启动时通过 \texttt{parse\_rules\_text} 将 EasyList 规则文本解析为结构化数据。域名规则（\texttt{||domain\textasciicircum}）存储为纯字符串用于 hostname 匹配；正则规则（\texttt{/pattern/}）编译为 \texttt{Regex} 对象并用 \texttt{Arc} 包装以支持跨线程共享；CSS 隐藏规则（\texttt{\#\#selector}）存储为选择器字符串。
+
+\textbf{2. 配置注入与初始化顺序}
+
+\begin{lstlisting}[language=Rust, caption=AdblockState 初始化和窗口注入]
+// lib.rs setup closure — order matters!
+let adblock_state = adblock::AdblockState::new(true, &adblock_rules);
+app.manage(adblock_state);  // MUST be before set_window
+
+let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
+// Inside build_window():
+if config.block_ads {
+    if let Some(state) = app.try_state::<adblock::AdblockState>() {
+        let export = state.engine.export_for_injection(None);
+        window_builder = window_builder
+            .initialization_script(&format!("window.pakeAdblock={};", json!(export)))
+            .initialization_script(include_str!("../inject/adblock.js"));
+    }
+}
+\end{lstlisting}
+
+\texttt{app.manage()} 必须在 \texttt{set\_window} 之前调用，否则 \texttt{build\_window} 中的 \texttt{try\_state} 返回 None，导致 \texttt{adblock.js} 不被注入。这是最常见的初始化顺序问题。
+
+\textbf{3. 前端拦截代理与运行时开关}
+
+\begin{lstlisting}[language=JavaScript, caption=adblock.js 核心逻辑]
+const originalFetch = window.fetch;
+window.fetch = function (input, init) {
+    if (!isAdblockEnabled()) return originalFetch.apply(this, arguments);
+    const url = typeof input === 'string' ? input : input?.url;
+    if (shouldBlockUrl(url)) { reportBlock(); return new Response('', {status:204}); }
+    return originalFetch.apply(this, arguments);
+};
+
+function applyCosmeticRules() {
+    const css = config.cosmetic_selectors.map(s =>
+        s.replace(/^##/, '') + '{display:none!important}').join('\n');
+    let style = document.getElementById('pake-adblock-style');
+    if (!style) { style = document.createElement('style'); style.id = 'pake-adblock-style';
+        (document.head || document.documentElement).appendChild(style); }
+    style.textContent = css;
+}
+const observer = new MutationObserver(() => applyCosmeticRules());
+observer.observe(document.documentElement, { childList: true, subtree: true });
+\end{lstlisting}
+
+\textbf{4. 设置面板到引擎的规则同步}
+
+\begin{lstlisting}[language=Rust, caption=save\_settings 中的规则同步]
+// In settings/commands.rs save_settings()
+if let Some(state) = app.try_state::<crate::adblock::AdblockState>() {
+    let current = state.engine.custom_rules();
+    if current != settings.adblock.custom_rules {
+        for rule in &current { state.engine.remove_custom_rule(rule); }
+        for rule in &settings.adblock.custom_rules {
+            let _ = state.engine.add_custom_rule(rule);
+        }
+        eprintln!("[Pake] adblock rules synced: {} rules", settings.adblock.custom_rules.len());
+    }
+}
 \end{lstlisting}
 
 \subsubsection{效果截图}
 
-% TODO: 成员 A 插入截图
-% 建议：1) 未拦截的广告页面  2) 拦截后的清爽页面  3) 自定义规则输入  4) 拦截统计托盘图标
+% TODO: 成员 A 插入实际运行截图
+\begin{itemize}
+  \item CLI 构建命令与 \texttt{--block-ads} 选项输出
+  \item 左下角 Pake Plus 按钮与页面正常运行状态
+  \item 设置面板 Adblock 标签——ON/OFF 开关、ON 标签、拦截统计数字、✏ 编辑自定义规则
+  \item 自定义规则编辑区展开状态（文本区 + 格式提示）
+  \item 托盘菜单 tooltip 显示``已拦截 N 个请求''
+\end{itemize}
 
 \subsubsection{遇到的问题与解决方案}
 
-% TODO: 成员 A 填写
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{AdblockState 初始化时机晚于窗口创建，导致 adblock.js 不注入}
+    \\→ 解决：将 \texttt{app.manage(adblock\_state)} 移到 \texttt{set\_window} 调用之前。初始化顺序为：创建 AdblockState → manage → set\_window → build\_window 中 try\_state 获取状态 → 注入脚本。若顺序错误，\texttt{try\_state} 返回 None 且无任何错误提示，通过 \texttt{eprintln!} 日志定位。
+
+  \item \textbf{设置面板自定义规则保存后不生效——JSON 存储与引擎内存脱节}
+    \\→ 解决：在 \texttt{save\_settings} IPC 命令末尾增加规则同步逻辑。对比当前引擎中的 \texttt{custom\_rules()} 与新设置中的规则列表，先清除所有旧规则再逐条添加新规则。每个规则添加前通过 \texttt{parse\_custom\_rule} 校验格式，非法规则不进入引擎。
+
+  \item \textbf{Tauri v2 ACL 拦截所有自定义 IPC 命令（adblock\_get\_stats 等无法调用）}
+    \\→ 解决：将 adblock 的命令名写入 \texttt{permissions/settings.toml} 的 \texttt{commands.allow} 列表，确保与 \texttt{capabilities/default.json} 中的权限标识符对应。Tauri v2 要求每个自定义命令显式授权，分散在多个权限文件容易遗漏。
+
+  \item \textbf{开关切换后拦截不停止——adblock.js 在加载时已固化状态}
+    \\→ 解决：在 \texttt{adblock.js} 中增加 \texttt{isAdblockEnabled()} 函数，在每次 \texttt{shouldBlockUrl} 和 \texttt{reportBlock} 执行前动态检查 \texttt{window.\_\_pakeAdblockRunning} 全局变量。设置面板的开关 onclick 和 \texttt{fillAdblock} 加载时同步更新该变量。
+
+  \item \textbf{多个齿轮按钮并存（旧右下角 FAB + 新左下角按钮）}
+    \\→ 解决：定位 \texttt{custom.js} 中两处按钮创建代码——旧 FAB（\texttt{\_\_ps\_fab}）和旧 \texttt{\_\_pgb}——逐一移除，统一使用左下角白色卡片样式按钮。
+
+  \item \textbf{自定义规则文本区默认不可见——用户不知道如何编辑}
+    \\→ 解决：改为折叠面板设计——默认显示``✏ 编辑自定义规则''按钮（虚线边框），点击后展开文本区并切换为``✏ 收起''（蓝色实线边框），提供清晰的展开/收起视觉反馈。
+\end{enumerate}
 
 % ---------- 4.2 B ----------
 \subsection{离线缓存代理模块（成员 B）}
@@ -661,52 +794,34 @@ for index in 0..keywords.len() {
 
 \subsubsection{设计思路}
 
-设置面板是整个 Pake Plus 的"控制中心"，负责统一管理其他三个模块的所有配置。
-本模块的核心设计原则是：\textbf{各模块独立运行，配置集中管理}。
-即使设置面板未打开，各模块使用默认配置正常运行；用户通过面板修改配置后，
-即时写入本地 JSON 文件，各模块下次读取时自动生效。
+设置面板是整个 Pake Plus 的"控制中心"，负责统一管理所有模块的配置。核心设计原则是\textbf{各模块独立运行，配置集中管理}——即使面板未打开，各模块以默认配置正常运行；用户通过面板修改后即时写入本地 JSON，各模块下次读取时自动生效。
 
-技术选型方面：
-\begin{itemize}
-  \item \textbf{Rust 后端}：负责 JSON 读写、ZIP 打包解压、系统信息采集、配置校验
-  \item \textbf{JavaScript 前端}：纯原生 JS（无框架），通过 DOM 操作动态构建设置面板 UI
-  \item \textbf{IPC 通信}：基于 Tauri 的 \texttt{\#[command]} 宏，Rust ↔ JS 双向调用
-  \item \textbf{数据持久化}：serde\_json 序列化到本地文件，版本备份 + 自动恢复
-\end{itemize}
+面板采用\textbf{纯 JavaScript DOM 操作}构建，无任何框架依赖。所有 UI 元素通过封装的 \texttt{el() / card() / row() / tg()} 工厂函数动态生成，支持中英文双语切换。Rust 后端负责 JSON 读写、ZIP 打包解压、系统信息采集和配置校验，通过 Tauri IPC 与前端双向通信。
+
+前端代码（\texttt{custom.js}）以 IIFE 形式注入主窗口，在页面加载完成后通过 \texttt{setTimeout} 延迟创建左下角的齿轮入口按钮。点击按钮时动态创建包含 6 个标签页的右侧抽屉面板，各标签页通过 \texttt{buildXxx(body)} 函数按需渲染。配置数据存储在 \texttt{pake-settings.json} 中，保存前自动轮转保留最近 5 个历史版本。
 
 \subsubsection{核心流程}
 
-\textbf{设置面板生命周期}：
+\textbf{1. 面板入口与生命周期。}
+应用启动 800ms 后，\texttt{custom.js} 在页面左下角创建一个白色圆角卡片按钮（\texttt{position:fixed;bottom:24px;left:24px}），包含蓝色渐变齿轮图标和"Pake Plus"文字，hover 时边框高亮。用户点击按钮、右键托盘选择 Settings、或按 Ctrl+Shift+, 均可打开面板。面板为 \texttt{position:fixed;top:0;right:0;width:400px} 的固定定位抽屉，初始状态通过 \texttt{transform:translateX(100\%)} 隐藏在屏幕右侧，打开时 CSS transition 滑入。面板包含左侧 120px 导航栏和右侧内容区，6 个标签页通过 \texttt{buildXxx(body)} 函数按需渲染。
 
-\begin{enumerate}[label=(\arabic*)]
-  \item 用户通过三种入口之一打开面板（右下角 ⚙ 齿轮按钮 / 托盘右键 Settings / Ctrl+Shift+,）
-  \item 齿轮按钮由注入的 \texttt{custom.js} 创建，点击时直接调用 \texttt{window.\_\_pakeOpenSettings()} 构建面板
-  \item 托盘菜单和快捷键通过 Rust 侧的 \texttt{open\_settings\_panel} 函数触发，该函数向主窗口
-    eval JavaScript 调用，同时 Tauri 事件系统用于与前端通信
-  \item JS 调用 \texttt{get\_settings} IPC 命令加载当前配置
-  \item 用户修改表单 → JS 调用 \texttt{validate\_settings} 校验 → 通过后调用 \texttt{save\_settings} 写入磁盘
-  \item 写入时自动轮转备份（保留最近 5 个版本）
-  \item 用户关闭面板时检测是否有未保存修改
-\end{enumerate}
+\textbf{2. 配置加载与表单填充。}
+面板打开后调用 \texttt{get\_settings} IPC 命令加载 \texttt{AppSettings} 结构体。该结构聚合四个子模块的配置（adblock / cache / clipboard / general），每个子模块独立实现 \texttt{ModuleSettings} trait 提供 \texttt{validate() / summary() / stats()} 三个方法。加载完成后调用 \texttt{fillAll()} 遍历各标签页的 DOM 元素，通过 \texttt{tglSet()} 设置开关状态、\texttt{value} 填充选择框和文本区。
 
-\textbf{数据导出流程}：
+\textbf{3. 表单校验与保存。}
+用户修改任何表单元素后 \texttt{dirty} 标志置为 true。点击 Save 时，\texttt{doSave()} 收集各标签页表单值构造完整 \texttt{AppSettings} 对象，调用 \texttt{validate\_settings} 校验参数合法性（如缓存范围 50-1000MB、剪贴板记录数在允许列表内等）。校验通过后调用 \texttt{save\_settings} 写入磁盘，同时触发广告拦截规则同步——后端比较新旧自定义规则，调用 \texttt{add\_custom\_rule / remove\_custom\_rule} 更新引擎。
 
-\begin{enumerate}[label=(\arabic*)]
-  \item JS 调用 \texttt{export\_data} IPC 命令
-  \item Rust 后端扫描整个 \texttt{AppData} 目录，收集所有数据文件
-  \item 生成 \texttt{manifest.json} 记录文件清单和元数据
-  \item 用 \texttt{zip} crate 打包所有文件为 \texttt{pake-data-YYYYMMDD.zip}
-  \item 保存到用户 Downloads 目录
-\end{enumerate}
+\textbf{4. 数据导出。}
+用户点击"导出"或输入路径后点"浏览"使用原生保存对话框。JS 调用 \texttt{export\_data} IPC（可选 \texttt{savePath} 参数），Rust 递归扫描 \texttt{AppData} 目录含子目录，生成 \texttt{manifest.json} 记录文件清单和元数据，用 \texttt{zip} crate 打包为 \texttt{pake-data-YYYYMMDD.zip}。
 
-\textbf{数据导入流程}：
+\textbf{5. 数据导入。}
+用户指定 ZIP 路径或使用原生文件选择器（通过 \texttt{rfd} crate 的 \texttt{pick\_zip\_file} 命令），JS 调用 \texttt{preview\_import} 展示内容摘要，用户确认后调用 \texttt{import\_data}。Rust 解压到临时目录，按 manifest 路径映射逐文件恢复，现有文件先备份为 \texttt{.bak}。
 
-\begin{enumerate}[label=(\arabic*)]
-  \item JS 调用 \texttt{preview\_import} 展示 ZIP 内容摘要（文件名、大小）
-  \item 用户确认后调用 \texttt{import\_data}
-  \item Rust 解压到临时目录 → 逐文件恢复到数据目录（先备份后覆盖）
-  \item 返回恢复摘要
-\end{enumerate}
+\textbf{6. 系统诊断。}
+About 标签调用 \texttt{get\_diagnostics} IPC。Rust 使用 \texttt{built} crate（编译期注入）获取版本、Git 哈希、编译时间等；使用 \texttt{sysinfo} crate 采集 OS、CPU、内存、磁盘信息。点击"复制诊断报告"通过 \texttt{arboard} crate 写入系统剪贴板。
+
+\textbf{7. 版本备份与恢复。}
+\texttt{write\_settings} 在保存前执行备份轮转：当前文件 → v1，旧 v1→v2，...，v4→v5，始终保留 5 个版本。启动时 \texttt{run\_health\_check} 检测配置是否可解析，若损坏自动从最近备份恢复。
 
 \subsubsection{关键代码}
 
@@ -760,44 +875,62 @@ pub fn validate_settings(settings: AppSettings) -> Result<(), Vec<String>> {
 }
 \end{lstlisting}
 
-\textbf{4. 备份轮转}
+\textbf{4. 配置校验、备份轮转与规则同步}
 
-\begin{lstlisting}[language=Rust, caption=设置版本备份]
+\begin{lstlisting}[language=Rust, caption=配置校验、备份轮转与广告规则同步]
+#[command]
+pub fn validate_settings(settings: AppSettings) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+    errors.extend(settings.adblock.validate());
+    errors.extend(settings.cache.validate());
+    errors.extend(settings.clipboard.validate());
+    errors.extend(settings.general.validate());
+    if errors.is_empty() { Ok(()) } else { Err(errors) }
+}
+
 const MAX_BACKUPS: u32 = 5;
-
-fn write_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), String> {
-    // 轮转旧备份：v1→v2, v2→v3, ..., v4→v5
-    if path.exists() {
-        for i in (1..MAX_BACKUPS).rev() {
-            let older = path.with_extension(format!("v{}.json", i));
-            let newer = path.with_extension(format!("v{}.json", i + 1));
-            if older.exists() { let _ = fs::rename(&older, &newer); }
+fn write_settings(app: &AppHandle, s: &AppSettings) -> Result<(), String> {
+    if path.exists() { /* v1→v2, ..., v4→v5 rotation */ }
+    fs::write(&path, &serde_json::to_string_pretty(s).unwrap())?;
+    // Sync adblock custom rules to running engine
+    if let Some(st) = app.try_state::<crate::adblock::AdblockState>() {
+        let cur = st.engine.custom_rules();
+        if cur != s.adblock.custom_rules {
+            for r in &cur { st.engine.remove_custom_rule(r); }
+            for r in &s.adblock.custom_rules { st.engine.add_custom_rule(r); }
         }
-        // 当前版本 → v1
-        let _ = fs::copy(&path, &path.with_extension("v1.json"));
     }
-    // 写入新设置
-    fs::write(&path, &json)?;
     Ok(())
+}
+\end{lstlisting}
+
+\textbf{5. 原生文件对话框}
+
+\begin{lstlisting}[language=Rust, caption=rfd 文件选择 IPC]
+#[command] pub fn pick_save_path() -> Result<String, String> {
+    rfd::FileDialog::new().set_title("选择导出位置")
+        .save_file().map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "cancelled".into())
+}
+#[command] pub fn pick_zip_file() -> Result<String, String> {
+    rfd::FileDialog::new().set_title("选择数据文件")
+        .add_filter("ZIP", &["zip"]).pick_file()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "cancelled".into())
 }
 \end{lstlisting}
 
 \subsubsection{效果截图}
 
-% TODO: 插入以下截图
+% TODO: D 插入实际运行截图
 \begin{itemize}
-  \item 欢迎页（三模块状态卡片）
-  \item 设置面板 --- 一般标签页（主题/语言/版本历史）
-  \item 设置面板 --- 广告拦截标签页（开关 + 自定义规则）
-  \item 设置面板 --- 离线缓存标签页（开关 + 缓存滑块）
-  \item 设置面板 --- 剪贴板标签页（开关 + 参数设置）
-  \item 设置面板 --- 数据管理标签页（导出 + 导入 + 存储占用）
-  \item 设置面板 --- 关于标签页（诊断信息 + 复制按钮）
-  \item 托盘菜单（状态文字 + Copy Diagnostics）
-  \item 导出进度 + 完成提示
-  \item 导入预览弹窗
-  \item 版本历史 + 回滚确认
-  \item 未保存修改确认弹窗
+  \item 左下角 Pake Plus 入口按钮（白色卡片 + 蓝色边框 + 齿轮图标）
+  \item 一般标签页——暗色主题开关、语言下拉、恢复默认按钮
+  \item 广告拦截标签页——ON/OFF 开关 + 标签、✏ 编辑自定义规则折叠面板
+  \item 剪贴板标签页——开关、记录数选择、保留天数、忽略短文本
+  \item 数据管理标签页——导出/导入按钮、路径输入框、浏览按钮
+  \item 关于标签页——诊断信息（应用信息 + 系统信息）、复制报告按钮
+  \item 托盘菜单——Settings、Clipboard History、Copy Diagnostics
 \end{itemize}
 
 \subsubsection{遇到的问题与解决方案}
@@ -817,6 +950,15 @@ fn write_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), String>
 
   \item \textbf{Theme/Language 使用 String 类型无法编译期保证合法性}
     \\→ 解决：重构为 Rust 枚举类型，\texttt{\#[serde(rename\_all = "lowercase")]} 保证序列化兼容
+
+  \item \textbf{Tauri v2 ACL 拦截自定义 IPC 命令}
+    \\→ 解决：将所有 app 级命令统一放在 \texttt{permissions/settings.toml} 的 \texttt{commands.allow} 列表中，而非分散在多个权限文件，确保所有命令被正确授权
+
+  \item \textbf{About 标签诊断信息不显示}
+    \\→ 解决：在 \texttt{buildAbout} 末尾添加 \texttt{loadDiagnostics()} 调用，截断 Git 哈希至 8 位，添加 \texttt{word-break:break-all} 防止文字溢出
+
+  \item \textbf{右下角旧齿轮按钮与新左下角按钮并存}
+    \\→ 解决：定位到原始代码中的 FAB（Floating Action Button）\texttt{\_\_ps\_fab} 和旧 \texttt{\_\_pgb} 按钮代码，逐一从 \texttt{custom.js} 中移除
 \end{enumerate}
 
 % ================================================================
