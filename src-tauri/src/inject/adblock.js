@@ -1,22 +1,29 @@
 (function () {
   if (!window.pakeAdblock || !window.pakeAdblock.enabled) {
     // Show disabled badge
-    var badge = document.createElement('div');
-    badge.id = 'pake-adblock-badge';
-    badge.style.cssText = 'position:fixed;bottom:70px;right:20px;z-index:2147483640;background:#ef4444;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(239,68,68,.3);pointer-events:none';
-    badge.textContent = '🛡 adblock DISABLED';
-    setTimeout(function(){ if(document.body) document.body.appendChild(badge); }, 500);
+    var badge = document.createElement("div");
+    badge.id = "pake-adblock-badge";
+    badge.style.cssText =
+      "position:fixed;bottom:70px;right:20px;z-index:2147483640;background:#ef4444;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(239,68,68,.3);pointer-events:none";
+    badge.textContent = "🛡 adblock DISABLED";
+    setTimeout(function () {
+      if (document.body) document.body.appendChild(badge);
+    }, 500);
     return;
   }
 
   const config = window.pakeAdblock;
 
   // Show active badge
-  var badge = document.createElement('div');
-  badge.id = 'pake-adblock-badge';
-  badge.style.cssText = 'position:fixed;bottom:70px;right:20px;z-index:2147483640;background:#16a34a;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(22,163,74,.3);pointer-events:none';
-  badge.textContent = '🛡 ' + (config.domains ? config.domains.length : 0) + ' domains blocked';
-  setTimeout(function(){ if(document.body) document.body.appendChild(badge); }, 500);
+  var badge = document.createElement("div");
+  badge.id = "pake-adblock-badge";
+  badge.style.cssText =
+    "position:fixed;bottom:70px;right:20px;z-index:2147483640;background:#16a34a;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(22,163,74,.3);pointer-events:none";
+  badge.textContent =
+    "🛡 " + (config.domains ? config.domains.length : 0) + " domains blocked";
+  setTimeout(function () {
+    if (document.body) document.body.appendChild(badge);
+  }, 500);
   const domains = new Set((config.domains || []).map((d) => d.toLowerCase()));
   const regexes = (config.regexes || [])
     .map((pattern) => {
@@ -33,7 +40,7 @@
   function hostMatches(host, domain) {
     const h = host.toLowerCase();
     const d = domain.toLowerCase();
-    return h === d || h.endsWith('.' + d);
+    return h === d || h.endsWith("." + d);
   }
 
   // Runtime toggle — controlled by settings panel
@@ -45,7 +52,7 @@
 
   function shouldBlockUrl(url) {
     if (!isAdblockEnabled()) return false;
-    if (!url || typeof url !== 'string') return false;
+    if (!url || typeof url !== "string") return false;
     try {
       const parsed = new URL(url, window.location.href);
       const host = parsed.hostname;
@@ -67,10 +74,18 @@
   function reportBlock() {
     if (!isAdblockEnabled()) return;
     blocked += 1;
-    var b = document.getElementById('pake-adblock-badge');
-    if (b) b.textContent = '🛡 ' + blocked + ' blocked | ' + (config.domains ? config.domains.length : 0) + ' domains';
+    var b = document.getElementById("pake-adblock-badge");
+    if (b)
+      b.textContent =
+        "🛡 " +
+        blocked +
+        " blocked | " +
+        (config.domains ? config.domains.length : 0) +
+        " domains";
     if (window.__TAURI_INTERNALS__?.invoke) {
-      window.__TAURI_INTERNALS__.invoke('adblock_report_blocked', { count: blocked }).catch(() => {});
+      window.__TAURI_INTERNALS__
+        .invoke("adblock_report_blocked", { count: blocked })
+        .catch(() => {});
     }
   }
 
@@ -79,15 +94,23 @@
     if (!selectors.length) return;
     const css = selectors
       .map((sel) => {
-        if (sel.startsWith('##')) return sel.slice(2) + '{display:none!important;visibility:hidden!important;}';
-        if (sel.startsWith('###')) return sel.slice(3) + '{display:none!important;visibility:hidden!important;}';
-        return sel + '{display:none!important;visibility:hidden!important;}';
+        if (sel.startsWith("##"))
+          return (
+            sel.slice(2) +
+            "{display:none!important;visibility:hidden!important;}"
+          );
+        if (sel.startsWith("###"))
+          return (
+            sel.slice(3) +
+            "{display:none!important;visibility:hidden!important;}"
+          );
+        return sel + "{display:none!important;visibility:hidden!important;}";
       })
-      .join('\n');
-    let style = document.getElementById('pake-adblock-style');
+      .join("\n");
+    let style = document.getElementById("pake-adblock-style");
     if (!style) {
-      style = document.createElement('style');
-      style.id = 'pake-adblock-style';
+      style = document.createElement("style");
+      style.id = "pake-adblock-style";
       (document.head || document.documentElement).appendChild(style);
     }
     style.textContent = css;
@@ -95,15 +118,20 @@
 
   function watchDom() {
     const observer = new MutationObserver(() => applyCosmeticRules());
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   const originalFetch = window.fetch;
   window.fetch = function (input, init) {
-    const url = typeof input === 'string' ? input : input?.url;
+    const url = typeof input === "string" ? input : input?.url;
     if (shouldBlockUrl(url)) {
       reportBlock();
-      return Promise.resolve(new Response('', { status: 204, statusText: 'Blocked' }));
+      return Promise.resolve(
+        new Response("", { status: 204, statusText: "Blocked" }),
+      );
     }
     return originalFetch.apply(this, arguments);
   };
@@ -113,7 +141,7 @@
     if (shouldBlockUrl(url)) {
       reportBlock();
       this.__pakeBlocked = true;
-      return originalOpen.call(this, method, 'about:blank');
+      return originalOpen.call(this, method, "about:blank");
     }
     return originalOpen.apply(this, arguments);
   };
@@ -125,8 +153,8 @@
   };
 
   applyCosmeticRules();
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
       applyCosmeticRules();
       watchDom();
     });

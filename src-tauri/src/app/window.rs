@@ -315,7 +315,12 @@ fn build_window(
         eprintln!("[Pake] window: AdblockState found={}", state_opt.is_some());
         if let Some(state) = state_opt {
             let export = state.engine.export_for_injection(None);
-            eprintln!("[Pake] window: export domains={}, regexes={}, cosmetic={}", export.domains.len(), export.regexes.len(), export.cosmetic_selectors.len());
+            eprintln!(
+                "[Pake] window: export domains={}, regexes={}, cosmetic={}",
+                export.domains.len(),
+                export.regexes.len(),
+                export.cosmetic_selectors.len()
+            );
             let js_config = format!(
                 "window.pakeAdblock = {};",
                 serde_json::json!({
@@ -331,8 +336,7 @@ fn build_window(
         }
     }
 
-    window_builder = window_builder
-        .initialization_script(include_str!("../inject/custom.js"));
+    window_builder = window_builder.initialization_script(include_str!("../inject/custom.js"));
 
     #[cfg(target_os = "windows")]
     let mut windows_browser_args = String::from("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-blink-features=AutomationControlled");

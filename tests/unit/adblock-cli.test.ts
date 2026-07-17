@@ -3,9 +3,7 @@ import { buildWindowConfigOverrides } from '../../bin/helpers/merge';
 import { DEFAULT_PAKE_OPTIONS } from '../../bin/defaults';
 import type { PakeAppOptions } from '../../bin/types';
 
-function makeOptions(
-  overrides: Partial<PakeAppOptions> = {},
-): PakeAppOptions {
+function makeOptions(overrides: Partial<PakeAppOptions> = {}): PakeAppOptions {
   return {
     ...DEFAULT_PAKE_OPTIONS,
     identifier: 'com.pake.test',

@@ -37,7 +37,10 @@ pub fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String
             for rule in &settings.adblock.custom_rules {
                 let _ = state.engine.add_custom_rule(rule);
             }
-            eprintln!("[Pake] adblock custom rules synced: {} rules", settings.adblock.custom_rules.len());
+            eprintln!(
+                "[Pake] adblock custom rules synced: {} rules",
+                settings.adblock.custom_rules.len()
+            );
         }
     }
 
@@ -107,10 +110,12 @@ fn collect_files(
             if let Ok(meta) = path.metadata() {
                 *total_size += meta.len();
                 // Store relative path from data_dir parent
-                if let (Some(parent_name), Some(file_name)) =
-                    (dir.file_name(), path.file_name())
-                {
-                    let rel = format!("{}/{}", parent_name.to_string_lossy(), file_name.to_string_lossy());
+                if let (Some(parent_name), Some(file_name)) = (dir.file_name(), path.file_name()) {
+                    let rel = format!(
+                        "{}/{}",
+                        parent_name.to_string_lossy(),
+                        file_name.to_string_lossy()
+                    );
                     file_list.push(rel);
                 }
             }
@@ -134,7 +139,11 @@ pub fn export_data(app: AppHandle, save_path: Option<String>) -> Result<String, 
     let default_name = format!("pake-data-{}.zip", chrono::Local::now().format("%Y%m%d"));
     let save_path = if let Some(user_path) = save_path {
         let p = PathBuf::from(&user_path);
-        if p.is_dir() { p.join(&default_name) } else { p }
+        if p.is_dir() {
+            p.join(&default_name)
+        } else {
+            p
+        }
     } else {
         app.path()
             .download_dir()
