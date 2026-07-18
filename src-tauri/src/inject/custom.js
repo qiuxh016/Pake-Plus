@@ -1538,10 +1538,7 @@ document.title += " [D面板已注入]";
         window.innerWidth - 300,
         Math.max(16, rect.left - 260),
       );
-      var top = Math.min(
-        window.innerHeight - 180,
-        Math.max(16, rect.top - 30),
-      );
+      var top = Math.min(window.innerHeight - 180, Math.max(16, rect.top - 30));
       card.style.left = left + "px";
       card.style.top = top + "px";
       card.innerHTML =
@@ -1571,7 +1568,11 @@ document.title += " [D面板已注入]";
     var startTop = 0;
     try {
       var saved = JSON.parse(localStorage.getItem(key) || "null");
-      if (saved && typeof saved.left === "number" && typeof saved.top === "number") {
+      if (
+        saved &&
+        typeof saved.left === "number" &&
+        typeof saved.top === "number"
+      ) {
         button.style.left = saved.left + "px";
         button.style.top = saved.top + "px";
         button.style.right = "auto";
@@ -1594,15 +1595,22 @@ document.title += " [D面板已注入]";
       var dy = event.clientY - startY;
       if (Math.abs(dx) + Math.abs(dy) < 4) return;
       moved = true;
-      var left = Math.max(8, Math.min(window.innerWidth - button.offsetWidth - 8, startLeft + dx));
-      var top = Math.max(8, Math.min(window.innerHeight - button.offsetHeight - 8, startTop + dy));
+      var left = Math.max(
+        8,
+        Math.min(window.innerWidth - button.offsetWidth - 8, startLeft + dx),
+      );
+      var top = Math.max(
+        8,
+        Math.min(window.innerHeight - button.offsetHeight - 8, startTop + dy),
+      );
       button.style.left = left + "px";
       button.style.top = top + "px";
       button.style.right = "auto";
       button.style.bottom = "auto";
     });
     button.addEventListener("pointerup", function (event) {
-      if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
+      if (button.hasPointerCapture(event.pointerId))
+        button.releasePointerCapture(event.pointerId);
       if (!moved) return;
       try {
         localStorage.setItem(
@@ -1674,7 +1682,10 @@ document.title += " [D面板已注入]";
         return item.url !== url;
       });
       list.unshift({ url: url, time: Date.now() });
-      localStorage.setItem("__ps_recent_visits__", JSON.stringify(list.slice(0, 4)));
+      localStorage.setItem(
+        "__ps_recent_visits__",
+        JSON.stringify(list.slice(0, 4)),
+      );
     } catch (e) {}
   }
   function workbenchMetric(label, value, icon) {

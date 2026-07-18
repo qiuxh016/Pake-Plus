@@ -606,9 +606,7 @@
           b.onclick = function () {
             b.classList.toggle("on");
             if (id === "__ps_theme__") {
-              applyTheme(
-                b.classList.contains("on") ? "dark" : "light",
-              );
+              applyTheme(b.classList.contains("on") ? "dark" : "light");
             }
             dirty = true;
           };
@@ -876,7 +874,14 @@
           );
         }
         function refreshChromeText() {
-          var keys = ["general", "adblock", "cache", "clipboard", "data", "about"];
+          var keys = [
+            "general",
+            "adblock",
+            "cache",
+            "clipboard",
+            "data",
+            "about",
+          ];
           document.querySelectorAll(".nav-item").forEach(function (el, i) {
             var spans = el.querySelectorAll("span");
             if (spans[1] && keys[i]) spans[1].textContent = t(keys[i]);
@@ -885,10 +890,7 @@
           document.getElementById("cancelBtn").textContent = t("cc");
         }
         function applyTheme(value) {
-          var next =
-            value ||
-            ((settings || {}).general || {}).theme ||
-            "light";
+          var next = value || ((settings || {}).general || {}).theme || "light";
           document.body.classList.toggle("dark", next === "dark");
         }
 
