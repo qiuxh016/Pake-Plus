@@ -1615,7 +1615,8 @@ document.title += " [D面板已注入]";
     style.textContent =
       "@keyframes __ps_bubble_up__{0%{transform:translateY(40px) scale(.68);opacity:0}12%{opacity:.72}76%{opacity:.42}100%{transform:translateY(-115vh) scale(1.12);opacity:0}}" +
       "@keyframes __ps_welcome_float__{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}" +
-      "#__ps_bubbles__ span{position:absolute;bottom:-240px;border-radius:999px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.96),rgba(59,130,246,.26) 54%,rgba(14,165,233,.1));border:1px solid rgba(59,130,246,.18);box-shadow:0 24px 70px rgba(59,130,246,.18),inset 0 0 28px rgba(255,255,255,.55);animation:__ps_bubble_up__ linear infinite;will-change:transform,opacity}";
+      "#__ps_bubbles__ span{position:absolute;bottom:-240px;border-radius:999px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.96),rgba(251,146,60,.28) 54%,rgba(251,191,36,.12));border:1px solid rgba(251,146,60,.22);box-shadow:0 24px 70px rgba(251,146,60,.16),inset 0 0 28px rgba(255,255,255,.55);animation:__ps_bubble_up__ linear infinite;will-change:transform,opacity}" +
+      "#__ps_bubbles__ span:nth-child(even){background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.96),rgba(244,114,182,.26) 54%,rgba(251,207,232,.14));border-color:rgba(244,114,182,.2);box-shadow:0 24px 70px rgba(244,114,182,.15),inset 0 0 28px rgba(255,255,255,.55)}";
     document.head.appendChild(style);
   }
   function renderWelcomeBubbles(bg) {
