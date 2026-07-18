@@ -1413,11 +1413,6 @@ document.title += " [D面板已注入]";
         box.style.display = "none";
       },
     );
-    input.oninput = function () {
-      var query = input.value.trim();
-      if (!query) return;
-      window.find(query, false, false, true, false, true, false);
-    };
     input.onkeydown = function (event) {
       var query = input.value.trim();
       if (event.key === "Escape") {
