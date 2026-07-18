@@ -1608,6 +1608,43 @@ document.title += " [D面板已注入]";
       card2("💾", "Cache", "ready", "#16a34a") +
       card2("📋", "Clipboard", "ready", "#16a34a");
   }
+  function ensureWelcomeStyle() {
+    if (document.getElementById("__ps_welcome_style__")) return;
+    var style = document.createElement("style");
+    style.id = "__ps_welcome_style__";
+    style.textContent =
+      "@keyframes __ps_bubble_up__{0%{transform:translateY(20px) scale(.72);opacity:0}12%{opacity:.58}100%{transform:translateY(-110vh) scale(1.18);opacity:0}}" +
+      "@keyframes __ps_welcome_float__{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}" +
+      "#__ps_bubbles__ span{position:absolute;bottom:-90px;border-radius:999px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.92),rgba(59,130,246,.18) 55%,rgba(14,165,233,.06));border:1px solid rgba(59,130,246,.12);box-shadow:0 20px 55px rgba(59,130,246,.12);animation:__ps_bubble_up__ linear infinite;will-change:transform,opacity}";
+    document.head.appendChild(style);
+  }
+  function renderWelcomeBubbles(bg) {
+    if (document.getElementById("__ps_bubbles__")) return;
+    var layer = document.createElement("div");
+    layer.id = "__ps_bubbles__";
+    layer.style.cssText =
+      "position:absolute;inset:0;overflow:hidden;pointer-events:none";
+    var bubbles = [
+      [8, 64, 16],
+      [18, 34, 12],
+      [30, 82, 19],
+      [42, 46, 14],
+      [54, 96, 22],
+      [66, 42, 13],
+      [76, 70, 18],
+      [88, 50, 15],
+    ];
+    for (var i = 0; i < bubbles.length; i++) {
+      var b = document.createElement("span");
+      b.style.left = bubbles[i][0] + "%";
+      b.style.width = bubbles[i][1] + "px";
+      b.style.height = bubbles[i][1] + "px";
+      b.style.animationDuration = bubbles[i][2] + "s";
+      b.style.animationDelay = -i * 2.3 + "s";
+      layer.appendChild(b);
+    }
+    bg.appendChild(layer);
+  }
 
   function showWelcome() {
     // Always allow welcome to show via button, skip auto-show only if flagged
@@ -1616,12 +1653,14 @@ document.title += " [D面板已注入]";
     // Full-screen dark backdrop
     var bg = document.getElementById("__ps_welcome_bg__");
     if (!bg) {
+      ensureWelcomeStyle();
       bg = document.createElement("div");
       bg.id = "__ps_welcome_bg__";
       bg.style.cssText =
         "position:fixed;top:0;left:0;right:auto;bottom:auto;z-index:2147483646;" +
-        "background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%)";
+        "background:linear-gradient(180deg,#f8fbff 0%,#eaf5ff 48%,#f7fbff 100%)";
       document.body.appendChild(bg);
+      renderWelcomeBubbles(bg);
       window.addEventListener("resize", function () {
         fitWelcomeToViewport(bg);
       });
@@ -1639,20 +1678,20 @@ document.title += " [D面板已注入]";
       "font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Microsoft YaHei,sans-serif;";
 
     w.innerHTML =
-      '<div style="width:64px;height:64px;margin:0 auto 20px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff">P</div>' +
-      '<h1 style="font-size:28px;font-weight:800;color:#f1f5f9;margin:0 0 6px">Pake Plus</h1>' +
-      '<p style="font-size:13px;color:#94a3b8;margin:0 0 24px">Lightweight desktop app with superpowers</p>' +
+      '<div style="width:72px;height:72px;margin:0 auto 20px;background:linear-gradient(135deg,#3b82f6,#7c3aed);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;color:#fff;box-shadow:0 20px 45px rgba(59,130,246,.32);animation:__ps_welcome_float__ 3.2s ease-in-out infinite">P</div>' +
+      '<h1 style="font-size:31px;font-weight:900;color:#0f172a;margin:0 0 6px;letter-spacing:0">Pake Plus</h1>' +
+      '<p style="font-size:13px;color:#64748b;margin:0 0 24px">Lightweight desktop app with superpowers</p>' +
       '<div style="display:flex;gap:12px;margin-bottom:24px" id="__ps_welcome_cards__">' +
-      '<div style="color:#94a3b8;font-size:12px">Loading...</div></div>' +
+      '<div style="color:#64748b;font-size:12px">Loading...</div></div>' +
       '<input id="__ps_welcome_url__" type="text" placeholder="Enter URL to open..." ' +
-      'style="width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-radius:10px;' +
-      "font-size:15px;font-family:SF Mono,Consolas,monospace;color:#e2e8f0;margin-bottom:20px;" +
-      'outline:none;background:rgba(255,255,255,.08);text-align:center" ' +
+      'style="width:100%;padding:15px 18px;border:1px solid rgba(148,163,184,.36);border-radius:14px;' +
+      "font-size:15px;font-family:SF Mono,Consolas,monospace;color:#0f172a;margin-bottom:20px;" +
+      'outline:none;background:rgba(255,255,255,.76);text-align:center;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(16px)" ' +
       'value="' +
       location.href +
       '"><br>' +
       '<button id="__ps_welcome_start__" ' +
-      'style="padding:14px 56px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(59,130,246,.3)">' +
+      'style="padding:14px 60px;border:none;border-radius:14px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 18px 35px rgba(37,99,235,.28)">' +
       "Start</button>";
     document.body.appendChild(w);
 
@@ -1730,11 +1769,11 @@ document.title += " [D面板已注入]";
   }
   function card2(icon, name, status, color) {
     return (
-      '<div style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 12px;text-align:center">' +
-      '<div style="width:36px;height:36px;margin:0 auto 6px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#e2e8f0">' +
+      '<div style="flex:1;background:rgba(255,255,255,.68);border:1px solid rgba(148,163,184,.28);border-radius:16px;padding:16px 12px;text-align:center;box-shadow:0 16px 38px rgba(15,23,42,.08);backdrop-filter:blur(14px)">' +
+      '<div style="width:38px;height:38px;margin:0 auto 7px;background:linear-gradient(180deg,#f8fafc,#e0f2fe);border:1px solid rgba(59,130,246,.16);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#2563eb">' +
       icon +
       "</div>" +
-      '<div style="font-size:11px;color:#e2e8f0;font-weight:600;margin-bottom:4px">' +
+      '<div style="font-size:12px;color:#0f172a;font-weight:800;margin-bottom:4px">' +
       name +
       "</div>" +
       '<div style="font-size:10px;color:' +
