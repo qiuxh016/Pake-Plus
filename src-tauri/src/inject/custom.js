@@ -1794,46 +1794,52 @@ document.title += " [D面板已注入]";
     // Welcome page
     showWelcome();
 
-    // Refresh button
-    var __prb = document.createElement("div");
-    __prb.id = "__ps_refresh_btn__";
-    __prb.style.cssText =
-      "position:fixed;bottom:124px;right:20px;z-index:2147483646;width:40px;height:40px;background:#fff;border:2px solid #3b82f6;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:20px;font-weight:700;box-shadow:0 2px 12px rgba(59,130,246,.2);transition:transform .15s;user-select:none";
-    __prb.textContent = "↻";
-    __prb.title = "Refresh page";
-    __prb.onclick = function () {
-      location.reload();
-    };
-    document.body.appendChild(__prb);
-    makeDraggable(__prb, "__ps_refresh_pos__");
+    if (!document.getElementById("__ps_refresh_btn__")) {
+      // Refresh button
+      var __prb = document.createElement("div");
+      __prb.id = "__ps_refresh_btn__";
+      __prb.style.cssText =
+        "position:fixed;bottom:124px;right:20px;z-index:2147483646;width:40px;height:40px;background:#fff;border:2px solid #3b82f6;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:20px;font-weight:700;box-shadow:0 2px 12px rgba(59,130,246,.2);transition:transform .15s;user-select:none";
+      __prb.textContent = "↻";
+      __prb.title = "Refresh page";
+      __prb.onclick = function () {
+        location.reload();
+      };
+      document.body.appendChild(__prb);
+      makeDraggable(__prb, "__ps_refresh_pos__");
+    }
 
-    // Page search button
-    var __pcb = document.createElement("button");
-    __pcb.id = "__ps_page_search_btn__";
-    __pcb.type = "button";
-    __pcb.style.cssText =
-      "position:fixed;bottom:72px;right:20px;z-index:2147483646;width:40px;height:40px;background:#fff;border:2px solid #3b82f6;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:18px;font-weight:700;box-shadow:0 2px 12px rgba(59,130,246,.2);transition:transform .15s;user-select:none";
-    __pcb.textContent = "⌕";
-    __pcb.title = "Search page";
-    __pcb.setAttribute("aria-label", "Search page");
-    __pcb.onclick = function () {
-      openPageSearchBox();
-    };
-    document.body.appendChild(__pcb);
-    makeDraggable(__pcb, "__ps_search_pos__");
+    if (!document.getElementById("__ps_page_search_btn__")) {
+      // Page search button
+      var __pcb = document.createElement("button");
+      __pcb.id = "__ps_page_search_btn__";
+      __pcb.type = "button";
+      __pcb.style.cssText =
+        "position:fixed;bottom:72px;right:20px;z-index:2147483646;width:40px;height:40px;background:#fff;border:2px solid #3b82f6;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:18px;font-weight:700;box-shadow:0 2px 12px rgba(59,130,246,.2);transition:transform .15s;user-select:none";
+      __pcb.textContent = "⌕";
+      __pcb.title = "Search page";
+      __pcb.setAttribute("aria-label", "Search page");
+      __pcb.onclick = function () {
+        openPageSearchBox();
+      };
+      document.body.appendChild(__pcb);
+      makeDraggable(__pcb, "__ps_search_pos__");
+    }
 
-    // Settings button
-    var __pgb = document.createElement("div");
-    __pgb.id = "__ps_fab_inner__";
-    __pgb.style.cssText =
-      "position:fixed;bottom:20px;right:20px;z-index:2147483646;width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;box-shadow:0 4px 16px rgba(59,130,246,.35);transition:transform .15s;user-select:none";
-    __pgb.textContent = "⚙";
-    __pgb.title = "Pake Plus Settings";
-    __pgb.onclick = function () {
-      if (window.__pakeOpenSettings) window.__pakeOpenSettings();
-    };
-    document.body.appendChild(__pgb);
-    makeDraggable(__pgb, "__ps_settings_pos__");
+    if (!document.getElementById("__ps_fab_inner__")) {
+      // Settings button
+      var __pgb = document.createElement("div");
+      __pgb.id = "__ps_fab_inner__";
+      __pgb.style.cssText =
+        "position:fixed;bottom:20px;right:20px;z-index:2147483646;width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;box-shadow:0 4px 16px rgba(59,130,246,.35);transition:transform .15s;user-select:none";
+      __pgb.textContent = "⚙";
+      __pgb.title = "Pake Plus Settings";
+      __pgb.onclick = function () {
+        if (window.__pakeOpenSettings) window.__pakeOpenSettings();
+      };
+      document.body.appendChild(__pgb);
+      makeDraggable(__pgb, "__ps_settings_pos__");
+    }
 
     // Home/Welcome button (bottom-left)
     var __phb = document.createElement("div");
