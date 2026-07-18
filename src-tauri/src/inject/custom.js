@@ -1613,9 +1613,9 @@ document.title += " [D面板已注入]";
     var style = document.createElement("style");
     style.id = "__ps_welcome_style__";
     style.textContent =
-      "@keyframes __ps_bubble_up__{0%{transform:translateY(20px) scale(.72);opacity:0}12%{opacity:.58}100%{transform:translateY(-110vh) scale(1.18);opacity:0}}" +
+      "@keyframes __ps_bubble_up__{0%{transform:translateY(40px) scale(.68);opacity:0}12%{opacity:.72}76%{opacity:.42}100%{transform:translateY(-115vh) scale(1.12);opacity:0}}" +
       "@keyframes __ps_welcome_float__{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}" +
-      "#__ps_bubbles__ span{position:absolute;bottom:-90px;border-radius:999px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.92),rgba(59,130,246,.18) 55%,rgba(14,165,233,.06));border:1px solid rgba(59,130,246,.12);box-shadow:0 20px 55px rgba(59,130,246,.12);animation:__ps_bubble_up__ linear infinite;will-change:transform,opacity}";
+      "#__ps_bubbles__ span{position:absolute;bottom:-240px;border-radius:999px;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.96),rgba(59,130,246,.26) 54%,rgba(14,165,233,.1));border:1px solid rgba(59,130,246,.18);box-shadow:0 24px 70px rgba(59,130,246,.18),inset 0 0 28px rgba(255,255,255,.55);animation:__ps_bubble_up__ linear infinite;will-change:transform,opacity}";
     document.head.appendChild(style);
   }
   function renderWelcomeBubbles(bg) {
@@ -1625,14 +1625,14 @@ document.title += " [D面板已注入]";
     layer.style.cssText =
       "position:absolute;inset:0;overflow:hidden;pointer-events:none";
     var bubbles = [
-      [8, 64, 16],
-      [18, 34, 12],
-      [30, 82, 19],
-      [42, 46, 14],
-      [54, 96, 22],
-      [66, 42, 13],
-      [76, 70, 18],
-      [88, 50, 15],
+      [6, 150, 18],
+      [18, 92, 14],
+      [31, 190, 22],
+      [45, 118, 16],
+      [58, 230, 26],
+      [70, 104, 15],
+      [82, 170, 20],
+      [93, 128, 17],
     ];
     for (var i = 0; i < bubbles.length; i++) {
       var b = document.createElement("span");
